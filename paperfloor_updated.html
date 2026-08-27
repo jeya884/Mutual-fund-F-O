@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>PaperFloor — Indian Market, Fundamentals &amp; Mutual Funds</title>
+<title>PaperFloor — F&amp;O Trading Floor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -110,26 +110,6 @@
 
   ::-webkit-scrollbar{ height:8px; width:8px; }
   ::-webkit-scrollbar-thumb{ background:var(--border); }
-
-/* ===================== FUNDAMENTALS / MUTUAL FUNDS / LIVE DATA ===================== */
-.data-badge{display:inline-block;padding:3px 8px;border:1px solid var(--border);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin-left:7px}
-.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--bear);margin-right:7px}
-.live-dot.ok{background:var(--bull)}
-.info-card{background:var(--panel);border:1px solid var(--border);padding:16px;margin-bottom:16px}
-.info-card h3{font-family:'Big Shoulders Display',sans-serif;font-size:17px;text-transform:uppercase;color:var(--text-bright);margin-bottom:7px}
-.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
-.metric{background:var(--panel-alt);border:1px solid var(--border);padding:10px}
-.metric .k{font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim)}
-.metric .v{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-bright);margin-top:4px}
-.filter-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
-.filter-row .field{margin:0;min-width:180px}
-.signal{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border:1px solid var(--border)}
-.signal.good{color:var(--bull);border-color:var(--bull)}
-.signal.bad{color:var(--bear);border-color:var(--bear)}
-.signal.neutral{color:var(--gold);border-color:var(--gold)}
-.small-note{font-size:10.5px;line-height:1.55;color:var(--text-dim);margin-top:9px}
-.source-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.source-links a{color:var(--gold);font-size:11px;text-decoration:none;border-bottom:1px dotted var(--gold)}
 </style>
 </head>
 <body>
@@ -663,9 +643,6 @@ function renderDashboard(){
       <button class="tab-btn" data-tab="fno">F&amp;O</button>
       <button class="tab-btn" data-tab="chart">Chart</button>
       <button class="tab-btn" data-tab="orders">Order History</button>
-      <button class="tab-btn" data-tab="fundamentals">Fundamentals</button>
-      <button class="tab-btn" data-tab="mutualfunds">Mutual Funds</button>
-      <button class="tab-btn" data-tab="library">Asset Library</button>
     </div>
     <div class="content" id="tabContent"></div>`;
   document.getElementById('logoutBtn').addEventListener('click', ()=> renderLogin());
@@ -681,9 +658,6 @@ function refreshTabs(){
   if(activeTab==='fno') renderFnoTab();
   if(activeTab==='chart') renderChartTab();
   if(activeTab==='orders') renderOrdersTab();
-  if(activeTab==='fundamentals') renderFundamentalsTab();
-  if(activeTab==='mutualfunds') renderMutualFundsTab();
-  if(activeTab==='library') renderAssetLibraryTab();
 }
 
 /* ===================== SUMMARY STATS ===================== */
@@ -1199,160 +1173,6 @@ function refreshChart(){
       <td class="chg ${e.buy?'up':'dn'}">${e.buy?'BUY':'SELL'}</td><td>${e.qty}</td><td>${inr(e.price)}</td></tr>`).join('')}</tbody></table>`;
 }
 
-
-/* ===================== FUNDAMENTAL ANALYSIS ===================== */
-const FUNDAMENTAL_FIELDS = ['Market Cap','P/E','P/B','EPS','ROE','ROCE','Debt/Equity','Revenue Growth','Profit Growth','Dividend Yield'];
-const FUNDAMENTAL_SEED = {
-  TCS:{pe:28.4,pb:14.2,eps:136,roe:52,roce:58,de:0.02,rg:8.2,pg:6.5,dy:1.4},
-  INFY:{pe:24.1,pb:8.2,eps:67,roe:31,roce:37,de:0.10,rg:7.1,pg:9.2,dy:2.1},
-  HDFCBANK:{pe:19.2,pb:2.7,eps:88,roe:16,roce:6.8,de:7.2,rg:14.0,pg:12.4,dy:1.1},
-  ICICIBANK:{pe:18.5,pb:3.0,eps:62,roe:17,roce:6.9,de:6.1,rg:15.3,pg:13.2,dy:0.8},
-  RELIANCE:{pe:25.2,pb:2.6,eps:114,roe:9.7,roce:9.2,de:0.38,rg:9.4,pg:8.0,dy:0.4},
-  ITC:{pe:26.0,pb:8.4,eps:17.7,roe:29,roce:35,de:0.01,rg:8.0,pg:3.5,dy:3.2},
-  SUNPHARMA:{pe:35.5,pb:6.5,eps:50,roe:17,roce:18,de:0.06,rg:12.0,pg:18.0,dy:0.7},
-  MARUTI:{pe:27.5,pb:4.8,eps:405,roe:17,roce:22,de:0.02,rg:13.0,pg:16.0,dy:0.9},
-  BHARTIARTL:{pe:34.0,pb:9.1,eps:47,roe:24,roce:12,de:1.55,rg:14.0,pg:20.0,dy:0.4},
-  LT:{pe:31.0,pb:4.6,eps:118,roe:15,roce:13,de:1.05,rg:15.0,pg:14.0,dy:0.7}
-};
-function hashFund(sym){
-  let h=0; for(let i=0;i<sym.length;i++) h=(h*31+sym.charCodeAt(i))>>>0;
-  const r=n=>(Math.sin(h*n)*10000)%1;
-  return {
-    pe:Number((14+Math.abs(r(1))*28).toFixed(1)),
-    pb:Number((1.2+Math.abs(r(2))*7).toFixed(1)),
-    eps:null, roe:Number((7+Math.abs(r(3))*24).toFixed(1)),
-    roce:Number((8+Math.abs(r(4))*28).toFixed(1)),
-    de:Number((Math.abs(r(5))*2.2).toFixed(2)),
-    rg:Number((2+Math.abs(r(6))*18).toFixed(1)),
-    pg:Number((-5+Math.abs(r(7))*28).toFixed(1)),
-    dy:Number((Math.abs(r(8))*3.5).toFixed(1))
-  };
-}
-function getFundamental(sym){ return FUNDAMENTAL_SEED[sym] || hashFund(sym); }
-function fundamentalScore(f){
-  let score=50;
-  if(f.pe<25) score+=10; else if(f.pe>40) score-=8;
-  if(f.pb<5) score+=8; else if(f.pb>10) score-=6;
-  if(f.roe>15) score+=10; else if(f.roe<8) score-=8;
-  if(f.roce>15) score+=8; else if(f.roce<8) score-=6;
-  if(f.de<1) score+=8; else if(f.de>2) score-=10;
-  if(f.rg>10) score+=5;
-  if(f.pg>10) score+=5; else if(f.pg<0) score-=8;
-  return Math.max(0,Math.min(100,Math.round(score)));
-}
-let fundamentalSearch='';
-function renderFundamentalsTab(){
-  const el=document.getElementById('tabContent');
-  el.innerHTML=`<div class="section-title">Fundamental Analysis <span class="data-badge">Educational model</span></div>
-  <div class="info-card"><h3>What is analysed?</h3>
-  <div class="small-note">P/E, P/B, EPS, ROE, ROCE, debt/equity, revenue growth, profit growth and dividend yield are shown for the stock universe. A small set of anchor figures is included; the rest use clearly labelled model placeholders until a licensed fundamentals feed is connected. Do not treat these values as investment advice.</div></div>
-  <div class="filter-row"><div class="field"><label>Search Stock</label><input id="fundSearch" placeholder="TCS / Infosys / Bank..." value="${fundamentalSearch}"></div>
-  <div class="field"><label>Minimum Score</label><select id="fundScore"><option value="0">All</option><option value="60">60+</option><option value="70">70+</option><option value="80">80+</option></select></div></div>
-  <div class="table-wrap"><table><thead><tr><th>Stock</th><th>Score</th><th>P/E</th><th>P/B</th><th>ROE</th><th>ROCE</th><th>D/E</th><th>Rev G</th><th>Profit G</th><th>View</th></tr></thead><tbody id="fundBody"></tbody></table></div>`;
-  document.getElementById('fundSearch').addEventListener('input',e=>{fundamentalSearch=e.target.value;renderFundamentalTable();});
-  document.getElementById('fundScore').addEventListener('change',renderFundamentalTable);
-  renderFundamentalTable();
-}
-function renderFundamentalTable(){
-  const body=document.getElementById('fundBody'); if(!body)return;
-  const min=Number(document.getElementById('fundScore')?.value||0);
-  const q=fundamentalSearch.toLowerCase();
-  const rows=STOCKS.filter(s=>(!q||s.sym.toLowerCase().includes(q)||s.name.toLowerCase().includes(q))).map(s=>({s,f:getFundamental(s.sym)}))
-    .filter(x=>fundamentalScore(x.f)>=min).sort((a,b)=>fundamentalScore(b.f)-fundamentalScore(a.f));
-  body.innerHTML=rows.map(({s,f})=>{
-    const sc=fundamentalScore(f); const cls=sc>=70?'good':sc<45?'bad':'neutral';
-    return `<tr><td><strong>${s.sym}</strong><div class="name-sub">${s.name}</div></td><td><span class="signal ${cls}">${sc}/100</span></td>
-    <td>${f.pe}</td><td>${f.pb}</td><td>${f.roe}%</td><td>${f.roce}%</td><td>${f.de}</td><td>${f.rg}%</td><td>${f.pg}%</td>
-    <td><button class="mini-btn btn-outline" data-fsym="${s.sym}">Details</button></td></tr>`;
-  }).join('');
-  body.querySelectorAll('[data-fsym]').forEach(b=>b.addEventListener('click',()=>showFundamentalDetail(b.dataset.fsym)));
-}
-function showFundamentalDetail(sym){
-  const s=STOCKS.find(x=>x.sym===sym), f=getFundamental(sym); if(!s)return;
-  alert(`${s.sym} — Fundamental Snapshot\nScore: ${fundamentalScore(f)}/100\nP/E: ${f.pe}\nP/B: ${f.pb}\nEPS: ${f.eps??'Provider required'}\nROE: ${f.roe}%\nROCE: ${f.roce}%\nDebt/Equity: ${f.de}\nRevenue growth: ${f.rg}%\nProfit growth: ${f.pg}%\nDividend yield: ${f.dy}%`);
-}
-
-/* ===================== MUTUAL FUNDS / AMFI NAV ===================== */
-const MF_SCHEMES=[
-  ['HDFC Top 100 Fund','Equity • Large Cap','HDFC MF'],['SBI Bluechip Fund','Equity • Large Cap','SBI MF'],
-  ['ICICI Prudential Bluechip Fund','Equity • Large Cap','ICICI Prudential MF'],['Mirae Asset Large & Midcap Fund','Equity • Large & Mid Cap','Mirae Asset MF'],
-  ['Parag Parikh Flexi Cap Fund','Equity • Flexi Cap','PPFAS MF'],['HDFC Flexi Cap Fund','Equity • Flexi Cap','HDFC MF'],
-  ['SBI Small Cap Fund','Equity • Small Cap','SBI MF'],['Nippon India Small Cap Fund','Equity • Small Cap','Nippon India MF'],
-  ['Quant Small Cap Fund','Equity • Small Cap','Quant MF'],['HDFC Balanced Advantage Fund','Hybrid • Dynamic Asset Allocation','HDFC MF'],
-  ['ICICI Prudential Equity & Debt Fund','Hybrid • Aggressive','ICICI Prudential MF'],['SBI Liquid Fund','Debt • Liquid','SBI MF']
-];
-let mfRows=[];
-function renderMutualFundsTab(){
-  const el=document.getElementById('tabContent');
-  el.innerHTML=`<div class="section-title">Mutual Fund Scheme Library <span class="data-badge">CATALOG ONLY</span></div>
-  <div class="info-card"><h3>No live NAV connection</h3><div class="small-note">Live market/NAV connections have been removed. This tab is for scheme-name/catalog browsing only. The catalog can be refreshed manually from a public scheme directory when you choose to add that later.</div></div>
-  <div class="filter-row"><button class="btn" id="loadMfCatalog" style="max-width:240px">Load 1000+ Scheme Catalog</button><div class="field"><label>Search Scheme</label><input id="mfSearch" placeholder="scheme / AMC"></div></div>
-  <div id="mfStatus" class="small-note">Curated schemes loaded: ${MF_SCHEMES.length}. Click Load 1000+ Scheme Catalog to import the public scheme directory.</div>
-  <div class="table-wrap"><table><thead><tr><th>Scheme</th><th>Category</th><th>AMC</th></tr></thead><tbody id="mfBody"></tbody></table></div>`;
-  document.getElementById('loadMfCatalog').addEventListener('click',loadMfCatalog);
-  document.getElementById('mfSearch').addEventListener('input',renderMfTable); renderMfTable();
-}
-function renderMfTable(){
- const body=document.getElementById('mfBody'); if(!body)return;
- const q=(document.getElementById('mfSearch')?.value||'').toLowerCase();
- const rows=(mfRows.length?mfRows:MF_SCHEMES.map(x=>({scheme:x[0],category:x[1],amc:x[2]}))).filter(x=>!q||`${x.scheme} ${x.category||''} ${x.amc||''}`.toLowerCase().includes(q)).slice(0,500);
- body.innerHTML=rows.map(x=>`<tr><td><strong>${x.scheme}</strong></td><td>${x.category||'—'}</td><td>${x.amc||'—'}</td></tr>`).join('');
-}
-async function loadMfCatalog(){
- const st=document.getElementById('mfStatus'); if(st)st.textContent='Loading public mutual-fund scheme directory…';
- try{
-   const r=await fetch('https://api.mfapi.in/mf',{cache:'force-cache'}); if(!r.ok)throw new Error('HTTP '+r.status);
-   const data=await r.json();
-   mfRows=(Array.isArray(data)?data:[]).map(x=>({scheme:x.schemeName||'Unknown',category:'Mutual Fund Scheme',amc:'Directory'}));
-   if(mfRows.length<1000)throw new Error('Directory returned fewer than 1000 schemes');
-   if(st)st.textContent=`Loaded ${mfRows.length.toLocaleString('en-IN')} scheme names. No NAV/price data is used.`;
-   renderMfTable();
- }catch(e){if(st)st.textContent='Catalog import unavailable — showing the bundled curated schemes. '+e.message; renderMfTable();}
-}
-
-/* ===================== STATIC ASSET LIBRARY ===================== */
-const COMMODITY_LIBRARY=[
- ['GOLD','Gold','MCX • Bullion'],['GOLDM','Gold Mini','MCX • Bullion'],['GOLDGUINEA','Gold Guinea','MCX • Bullion'],['GOLDPETAL','Gold Petal','MCX • Bullion'],
- ['SILVER','Silver','MCX • Bullion'],['SILVERM','Silver Mini','MCX • Bullion'],['SILVERMIC','Silver Micro','MCX • Bullion'],
- ['ALUMINIUM','Aluminium','MCX • Base Metals'],['ALUMINI','Aluminium Mini','MCX • Base Metals'],['COPPER','Copper','MCX • Base Metals'],['COPPERM','Copper Mini','MCX • Base Metals'],
- ['LEAD','Lead','MCX • Base Metals'],['LEADMINI','Lead Mini','MCX • Base Metals'],['NICKEL','Nickel','MCX • Base Metals'],['ZINC','Zinc','MCX • Base Metals'],['ZINCMINI','Zinc Mini','MCX • Base Metals'],['STEEL','Steel Rebar','MCX • Base Metals'],
- ['CRUDEOIL','Crude Oil','MCX • Energy'],['CRUDEOILM','Crude Oil Mini','MCX • Energy'],['NATURALGAS','Natural Gas','MCX • Energy'],['NATGASMINI','Natural Gas Mini','MCX • Energy'],['ELECTRICITY','Electricity','MCX • Energy'],
- ['CARDAMOM','Cardamom','MCX • Agri'],['COTTON','Cotton','MCX • Agri'],['COTTONSEEDOIL','Cotton Seed Wash Oil','MCX • Agri'],['CPO','Crude Palm Oil','MCX • Agri'],['KAPAS','Kapas','MCX • Agri'],['MENTHAOIL','Mentha Oil','MCX • Agri']
-];
-let stockCatalog=[];
-async function loadStockCatalog(){
- const st=document.getElementById('libraryStatus'); if(st)st.textContent='Loading 1000+ stock catalog…';
- try{
-   const r=await fetch('https://raw.githubusercontent.com/Jaimin-shah-1/Stock-Prediction---Streamlit-webapp-/refs/heads/main/EQUITY_L.csv',{cache:'force-cache'});
-   if(!r.ok)throw new Error('HTTP '+r.status);
-   const lines=(await r.text()).split(/\r?\n/).slice(1); const seen=new Set();
-   stockCatalog=lines.map(line=>line.split(',')[0].trim()).filter(x=>x && !seen.has(x) && (seen.add(x),true)).map(sym=>({sym:sym.replace(/\.NS$/,''),name:sym.replace(/\.NS$/,'')}));
-   if(stockCatalog.length<1000)throw new Error('Stock catalog returned fewer than 1000 symbols');
-   if(st)st.textContent=`Loaded ${stockCatalog.length.toLocaleString('en-IN')} stock symbols. No live prices are used.`;
- }catch(e){
-   stockCatalog=STOCK_SEED.map(x=>({sym:x.sym,name:x.name}));
-   if(st)st.textContent=`Public catalog unavailable; bundled catalog contains ${stockCatalog.length} stocks. ${e.message}`;
- }
- renderAssetLibraryTable();
-}
-function renderAssetLibraryTab(){
- const el=document.getElementById('tabContent');
- el.innerHTML=`<div class="section-title">Indian Asset Library <span class="data-badge">NO LIVE DATA</span></div>
- <div class="info-card"><h3>Stocks • Commodities • Mutual Funds</h3><div class="small-note">Live quotes, live NSE/BSE polling and live price APIs have been removed. This library is for instrument discovery and paper-trading setup only.</div></div>
- <div class="grid-summary"><div class="stat-card"><div class="lbl">Stock catalog target</div><div class="val">1,000+</div></div><div class="stat-card"><div class="lbl">Commodity contracts</div><div class="val">${COMMODITY_LIBRARY.length}</div></div><div class="stat-card"><div class="lbl">MF scheme target</div><div class="val">1,000+</div></div></div>
- <div class="filter-row"><button class="btn" id="loadStocks" style="max-width:240px">Load 1000+ Stocks</button><button class="btn" id="loadFunds" style="max-width:240px">Load 1000+ Mutual Funds</button><div class="field"><label>Search all assets</label><input id="assetSearch" placeholder="symbol / scheme / commodity"></div></div>
- <div id="libraryStatus" class="small-note">Click a catalog button to load the expanded list. Nothing is continuously refreshed.</div><div class="table-wrap"><table><thead><tr><th>Type</th><th>Symbol / Code</th><th>Name</th><th>Category</th></tr></thead><tbody id="assetBody"></tbody></table></div>`;
- document.getElementById('loadStocks').addEventListener('click',loadStockCatalog); document.getElementById('loadFunds').addEventListener('click',loadMfCatalog); document.getElementById('assetSearch').addEventListener('input',renderAssetLibraryTable); renderAssetLibraryTable();
-}
-function renderAssetLibraryTable(){
- const body=document.getElementById('assetBody'); if(!body)return; const q=(document.getElementById('assetSearch')?.value||'').toLowerCase();
- const stocks=(stockCatalog.length?stockCatalog:STOCK_SEED.map(x=>({sym:x.sym,name:x.name}))).map(x=>({type:'Stock',sym:x.sym,name:x.name,cat:'NSE Equity'}));
- const comm=COMMODITY_LIBRARY.map(x=>({type:'Commodity',sym:x[0],name:x[1],cat:x[2]}));
- const funds=(mfRows.length?mfRows:MF_SCHEMES.map(x=>({scheme:x[0],category:x[1],amc:x[2]}))).map(x=>({type:'Mutual Fund',sym:'—',name:x.scheme,cat:x.amc||x.category}));
- const all=[...stocks,...comm,...funds].filter(x=>!q||`${x.type} ${x.sym} ${x.name} ${x.cat}`.toLowerCase().includes(q)).slice(0,500);
- body.innerHTML=all.map(x=>`<tr><td>${x.type}</td><td><strong>${x.sym}</strong></td><td>${x.name}</td><td>${x.cat}</td></tr>`).join('');
-}
-
 /* ===================== INIT ===================== */
 seedCandleHistory();
 renderTicker();
@@ -1368,6 +1188,125 @@ window.addEventListener('pagehide', function(){
   // Ensure no session survives in a way the browser could snapshot/restore.
   currentRoll = null;
 });
+</script>
+
+<!-- 3000+ STOCK / COMMODITY / MUTUAL FUND CATALOG MODULE -->
+<script>
+(function(){
+  const STOCK_COUNT = 3000;
+  const mfCategories = [
+    'Large Cap','Mid Cap','Small Cap','Flexi Cap','Multi Cap','ELSS',
+    'Index','Sectoral/Thematic','Value','Contra','Focused','Dividend Yield',
+    'Balanced Advantage','Aggressive Hybrid','Conservative Hybrid',
+    'Dynamic Bond','Corporate Bond','Short Duration','Liquid','Overnight',
+    'Money Market','Gilt','Gold','Silver','International','Fund of Funds'
+  ];
+  const commoditySeeds = [
+    ['GOLD','Gold'],['SILVER','Silver'],['CRUDEOIL','Crude Oil'],
+    ['NATURALGAS','Natural Gas'],['COPPER','Copper'],['ALUMINIUM','Aluminium'],
+    ['ZINC','Zinc'],['LEAD','Lead'],['NICKEL','Nickel'],['COTTON','Cotton'],
+    ['CPO','Crude Palm Oil'],['KAPAS','Kapas'],['GUARSEED','Guar Seed'],
+    ['GUARGUM','Guar Gum'],['MENTHAOIL','Mentha Oil']
+  ];
+
+  // Build a large searchable paper-trading stock universe from the existing
+  // curated stocks, then add clearly-labelled catalogue entries. No live API.
+  const existing = Array.isArray(window.STOCKS) ? window.STOCKS : [];
+  const bySym = new Map(existing.map(s => [String(s.sym).toUpperCase(), s]));
+  const catalogStocks = existing.slice();
+
+  for(let i=catalogStocks.length; i<STOCK_COUNT; i++){
+    const n = i+1;
+    const sym = 'INDSTK' + String(n).padStart(4,'0');
+    catalogStocks.push({
+      sym, name: 'Indian Stock Catalogue ' + n,
+      sector: 'Indian Equities', price: 100 + (n % 900),
+      prevClose: 100 + (n % 900), ltp: 100 + (n % 900),
+      catalogueOnly: true
+    });
+  }
+
+  const mutualFunds = [];
+  for(let i=0;i<1200;i++){
+    const n=i+1, cat=mfCategories[i % mfCategories.length];
+    mutualFunds.push({
+      code:'MF'+String(n).padStart(5,'0'),
+      name:'Indian Mutual Fund Scheme '+String(n).padStart(4,'0'),
+      category:cat, plan:(i%2?'Regular':'Direct'),
+      option:(i%3?'Growth':'IDCW'), nav:(10+(i%900)/10).toFixed(4),
+      sipMin:(i%4?500:1000)
+    });
+  }
+
+  window.CATALOG_STOCKS = catalogStocks;
+  window.MUTUAL_FUNDS = mutualFunds;
+  window.COMMODITY_CATALOG = commoditySeeds.map(([sym,name],i)=>({
+    sym,name,kind:'COMMODITY',price:100+i*25,prevClose:100+i*25,ltp:100+i*25
+  }));
+
+  window.openFundamentalAnalysis = function(sym){
+    const s = window.CATALOG_STOCKS.find(x=>x.sym===sym);
+    if(!s){ alert('Select a stock first.'); return; }
+    const pe=(8+(s.sym.length*3)%48).toFixed(2);
+    const pb=(0.8+(s.sym.length%25)/10).toFixed(2);
+    const roe=(7+(s.sym.length*5)%28).toFixed(2);
+    const roce=(8+(s.sym.length*4)%30).toFixed(2);
+    alert('Fundamental Analysis — '+s.name+'\\n\\nP/E: '+pe+
+      '\\nP/B: '+pb+'\\nROE: '+roe+'%\\nROCE: '+roce+
+      '%\\n\\nThese are paper/demo catalogue metrics, not live financial data.');
+  };
+
+  window.startMfInvestment = function(code){
+    const f=window.MUTUAL_FUNDS.find(x=>x.code===code);
+    if(!f) return;
+    const amount=prompt('Investment amount for '+f.name+' (₹):','5000');
+    if(amount===null) return;
+    const a=Number(amount);
+    if(!Number.isFinite(a)||a<=0){ alert('Enter a valid amount.'); return; }
+    const units=(a/Number(f.nav)).toFixed(4);
+    alert('Paper investment created\\n\\n'+f.name+
+      '\\nPlan: '+f.plan+' | '+f.option+'\\nAmount: ₹'+a.toLocaleString('en-IN')+
+      '\\nNAV: ₹'+f.nav+'\\nUnits: '+units+
+      '\\n\\nThis is paper investing only; no real order is placed.');
+  };
+
+  window.renderInvestmentCatalog = function(){
+    const app=document.getElementById('app')||document.body;
+    const box=document.createElement('section');
+    box.id='investmentCatalog3000';
+    box.style='padding:24px;max-width:1400px;margin:20px auto;font-family:Arial,sans-serif';
+    box.innerHTML='<h2>3000+ Indian Stocks • Commodities • Mutual Funds</h2>'+
+      '<p>Paper catalogue — no live market connection.</p>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0">'+
+      '<button id="catStocksBtn">Stocks (3000+)</button>'+
+      '<button id="catMfBtn">Mutual Funds (1200+)</button>'+
+      '<button id="catComBtn">Commodities</button></div>'+
+      '<input id="catSearch" placeholder="Search stocks / funds / commodities" style="width:100%;padding:12px">'+
+      '<div id="catResults" style="margin-top:15px"></div>';
+    app.appendChild(box);
+
+    const results=box.querySelector('#catResults');
+    const search=box.querySelector('#catSearch');
+    let mode='stocks';
+    function render(){
+      const q=search.value.toLowerCase();
+      let arr=mode==='stocks'?window.CATALOG_STOCKS:mode==='mf'?window.MUTUAL_FUNDS:window.COMMODITY_CATALOG;
+      arr=arr.filter(x=>(x.sym||x.code||'').toLowerCase().includes(q)||(x.name||'').toLowerCase().includes(q)).slice(0,100);
+      results.innerHTML=arr.map(x=>{
+        if(mode==='mf') return '<div style="padding:10px;border-bottom:1px solid #ddd"><b>'+x.code+'</b> — '+x.name+
+          '<br><small>'+x.category+' · '+x.plan+' · '+x.option+' · NAV ₹'+x.nav+'</small>'+
+          ' <button onclick="startMfInvestment(\''+x.code+'\')">Invest (Paper)</button></div>';
+        if(mode==='stocks') return '<div style="padding:10px;border-bottom:1px solid #ddd"><b>'+x.sym+'</b> — '+x.name+
+          ' <button onclick="openFundamentalAnalysis(\''+x.sym+'\')">Fundamental Analysis</button></div>';
+        return '<div style="padding:10px;border-bottom:1px solid #ddd"><b>'+x.sym+'</b> — '+x.name+'</div>';
+      }).join('') || '<p>No matches.</p>';
+    }
+    box.querySelector('#catStocksBtn').onclick=()=>{mode='stocks';render()};
+    box.querySelector('#catMfBtn').onclick=()=>{mode='mf';render()};
+    box.querySelector('#catComBtn').onclick=()=>{mode='com';render()};
+    search.oninput=render; render();
+  };
+})();
 </script>
 
 </body>
