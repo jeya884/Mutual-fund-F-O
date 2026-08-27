@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PaperFloor — Indian Market, Fundamentals &amp; Mutual Funds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0E14; --panel:#10161D; --panel-alt:#141B23; --border:#1F2A33;
+    --text:#C9D3D9; --text-dim:#6B7680; --text-bright:#F1F4F6;
+    --gold:#D4A93F; --gold-dim:#8A7233;
+    --bull:#2FBF71; --bull-bg:rgba(47,191,113,0.12);
+    --bear:#E2564F; --bear-bg:rgba(226,86,79,0.12);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{ background:var(--bg); color:var(--text); font-family:'IBM Plex Sans', sans-serif; min-height:100vh; display:flex; flex-direction:column; overflow-x:hidden; }
+  .mono{font-family:'IBM Plex Mono', monospace;}
+
+  #ticker-wrap{ background:#05070A; border-bottom:1px solid var(--border); overflow:hidden; white-space:nowrap; padding:9px 0; position:relative; flex-shrink:0; }
+  #ticker-wrap::before, #ticker-wrap::after{ content:""; position:absolute; top:0; bottom:0; width:60px; z-index:2; }
+  #ticker-wrap::before{ left:0; background:linear-gradient(90deg, #05070A, transparent);}
+  #ticker-wrap::after{ right:0; background:linear-gradient(-90deg, #05070A, transparent);}
+  #ticker-track{ display:inline-flex; animation: scroll-ticker 90s linear infinite; will-change: transform; }
+  @keyframes scroll-ticker{ from{ transform: translateX(0);} to{ transform: translateX(-50%);} }
+  .tick-item{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:0.04em; padding:0 22px; display:inline-flex; align-items:center; gap:7px; color:var(--text-dim); }
+  .tick-item .sym{ color:var(--gold); font-weight:600; }
+  .tick-item .up{ color:var(--bull); } .tick-item .dn{ color:var(--bear); }
+  @media (prefers-reduced-motion: reduce){ #ticker-track{ animation: none; } }
+
+  #app{ flex:1; display:flex; flex-direction:column; }
+
+  .gate{ flex:1; display:flex; align-items:center; justify-content:center; padding:32px 16px;
+    background: radial-gradient(ellipse 900px 500px at 50% -10%, rgba(212,169,63,0.08), transparent); }
+  .gate-card{ width:100%; max-width:400px; background:var(--panel); border:1px solid var(--border); position:relative; }
+  .gate-card::before{ content:""; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, var(--gold), var(--gold-dim), var(--gold)); }
+  .gate-head{ padding:32px 32px 20px; border-bottom:1px dashed var(--border); text-align:center; }
+  .gate-brand{ font-family:'Big Shoulders Display', sans-serif; font-weight:800; font-size:34px; letter-spacing:0.03em; color:var(--text-bright); text-transform:uppercase; }
+  .gate-brand span{ color:var(--gold); }
+  .gate-sub{ font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-dim); margin-top:6px; }
+  .gate-body{ padding:28px 32px 32px; }
+  .field{ margin-bottom:18px; }
+  .field label{ display:block; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-dim); margin-bottom:7px; }
+  .field input, .field select{ width:100%; background:var(--panel-alt); border:1px solid var(--border); color:var(--text-bright); padding:11px 13px; font-family:'IBM Plex Mono', monospace; font-size:14.5px; letter-spacing:0.04em; outline:none; transition:border-color .15s; }
+  .field input:focus, .field select:focus{ border-color:var(--gold); }
+  .field-hint{ font-size:11px; color:var(--text-dim); margin-top:6px; line-height:1.5;}
+  .btn{ width:100%; padding:12px; background:var(--gold); color:#0A0E14; border:none; font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:13px; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; transition:filter .15s, transform .05s; }
+  .btn:hover{ filter:brightness(1.08); } .btn:active{ transform:translateY(1px); }
+  .btn-outline{ background:transparent; border:1px solid var(--border); color:var(--text); }
+  .btn-outline:hover{ border-color:var(--gold); color:var(--gold); filter:none; }
+  .btn-sell{ background:var(--bear); color:#fff; } .btn-buy{ background:var(--bull); color:#06170F; }
+  .gate-error{ background:var(--bear-bg); border:1px solid var(--bear); color:var(--bear); font-size:12.5px; padding:9px 12px; margin-bottom:16px; display:none; }
+  .gate-note{ text-align:center; font-size:11px; color:var(--text-dim); padding:16px 32px 26px; border-top:1px dashed var(--border); }
+
+  .topbar{ display:flex; align-items:center; justify-content:space-between; padding:14px 26px; border-bottom:1px solid var(--border); background:var(--panel); flex-wrap:wrap; gap:12px; }
+  .topbar-left{ display:flex; align-items:center; gap:14px; }
+  .topbar-brand{ font-family:'Big Shoulders Display', sans-serif; font-weight:800; font-size:22px; letter-spacing:0.03em; color:var(--text-bright); text-transform:uppercase; }
+  .topbar-brand span{ color:var(--gold); }
+  .badge-roll{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--text-dim); border:1px solid var(--border); padding:3px 9px; }
+  .topbar-right{ display:flex; align-items:center; gap:18px; }
+  .cash-pill{ font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--text-bright); border-left:2px solid var(--gold); padding-left:10px; }
+  .cash-pill .lbl{ color:var(--text-dim); font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; display:block; margin-bottom:2px;}
+  .logout-btn{ background:none; border:1px solid var(--border); color:var(--text-dim); padding:7px 14px; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; }
+  .logout-btn:hover{ border-color:var(--bear); color:var(--bear); }
+
+  .tabs{ display:flex; gap:2px; padding:0 26px; background:var(--panel); border-bottom:1px solid var(--border); overflow-x:auto; }
+  .tab-btn{ background:none; border:none; color:var(--text-dim); padding:13px 18px; font-size:12.5px; letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; font-family:'IBM Plex Sans', sans-serif; font-weight:600; }
+  .tab-btn.active{ color:var(--gold); border-bottom-color:var(--gold); }
+  .tab-btn:hover:not(.active){ color:var(--text-bright); }
+  .subtabs{ padding:0; margin-bottom:16px; background:transparent; border-bottom:1px solid var(--border); }
+
+  .content{ flex:1; padding:22px 26px 40px; max-width:1200px; width:100%; margin:0 auto; }
+  .section-title{ font-family:'Big Shoulders Display', sans-serif; font-weight:700; font-size:20px; letter-spacing:0.03em; text-transform:uppercase; color:var(--text-bright); margin-bottom:14px; }
+  .grid-summary{ display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:12px; margin-bottom:26px; }
+  .stat-card{ background:var(--panel); border:1px solid var(--border); padding:14px 16px; }
+  .stat-card .lbl{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-dim); margin-bottom:6px;}
+  .stat-card .val{ font-family:'IBM Plex Mono', monospace; font-size:19px; color:var(--text-bright); }
+  .stat-card .val.up{ color:var(--bull); } .stat-card .val.dn{ color:var(--bear); }
+
+  table{ width:100%; border-collapse:collapse; }
+  thead th{ text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-dim); padding:10px 12px; border-bottom:1px solid var(--border); font-weight:600; }
+  tbody td{ padding:11px 12px; border-bottom:1px solid var(--border); font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--text); vertical-align:middle; }
+  tbody tr:hover{ background:var(--panel-alt); }
+  .name-sub{ font-family:'IBM Plex Sans',sans-serif; font-size:11px; color:var(--text-dim); }
+  .chg.up{ color:var(--bull); } .chg.dn{ color:var(--bear); }
+  .row-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+  .mini-btn{ padding:6px 12px; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; border:none; cursor:pointer; font-family:'IBM Plex Sans',sans-serif; font-weight:700; }
+  .empty-state{ text-align:center; padding:50px 20px; color:var(--text-dim); border:1px dashed var(--border); font-size:13px; }
+  .table-wrap{ background:var(--panel); border:1px solid var(--border); overflow-x:auto; }
+  .sector-head-row td{ background:var(--panel-alt); color:var(--gold); font-size:11px; letter-spacing:0.09em; text-transform:uppercase; font-family:'IBM Plex Sans',sans-serif; font-weight:700; padding:9px 12px; }
+  .seg-pill{ display:inline-block; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; padding:2px 7px; border:1px solid var(--border); color:var(--text-dim); margin-left:8px; vertical-align:middle;}
+
+  .modal-overlay{ position:fixed; inset:0; background:rgba(5,7,10,0.75); display:none; align-items:center; justify-content:center; z-index:50; padding:16px; }
+  .modal-overlay.show{ display:flex; }
+  .modal{ width:100%; max-width:380px; background:var(--panel); border:1px solid var(--border); position:relative; }
+  .modal::before{ content:""; position:absolute; top:0; left:0; right:0; height:3px; }
+  .modal.buy-mode::before{ background:var(--bull); } .modal.sell-mode::before{ background:var(--bear); }
+  .modal-head{ padding:20px 22px 14px; border-bottom:1px dashed var(--border); }
+  .modal-head .m-sym{ font-family:'Big Shoulders Display',sans-serif; font-size:22px; color:var(--text-bright); font-weight:700;}
+  .modal-head .m-price{ font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--text-dim); margin-top:4px;}
+  .modal-body{ padding:20px 22px; }
+  .modal-foot{ padding:0 22px 22px; display:flex; gap:10px; }
+  .modal-foot .btn{ flex:1; }
+  .order-total{ font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--text-bright); background:var(--panel-alt); border:1px solid var(--border); padding:10px 12px; margin-bottom:16px; display:flex; justify-content:space-between; }
+  .close-x{ position:absolute; top:14px; right:16px; background:none; border:none; color:var(--text-dim); font-size:18px; cursor:pointer; line-height:1; }
+  .close-x:hover{ color:var(--text-bright); }
+  .form-err{ color:var(--bear); font-size:11.5px; margin-top:8px; display:none; }
+
+  ::-webkit-scrollbar{ height:8px; width:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--border); }
+
+/* ===================== FUNDAMENTALS / MUTUAL FUNDS / LIVE DATA ===================== */
+.data-badge{display:inline-block;padding:3px 8px;border:1px solid var(--border);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin-left:7px}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--bear);margin-right:7px}
+.live-dot.ok{background:var(--bull)}
+.info-card{background:var(--panel);border:1px solid var(--border);padding:16px;margin-bottom:16px}
+.info-card h3{font-family:'Big Shoulders Display',sans-serif;font-size:17px;text-transform:uppercase;color:var(--text-bright);margin-bottom:7px}
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.metric{background:var(--panel-alt);border:1px solid var(--border);padding:10px}
+.metric .k{font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim)}
+.metric .v{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-bright);margin-top:4px}
+.filter-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.filter-row .field{margin:0;min-width:180px}
+.signal{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border:1px solid var(--border)}
+.signal.good{color:var(--bull);border-color:var(--bull)}
+.signal.bad{color:var(--bear);border-color:var(--bear)}
+.signal.neutral{color:var(--gold);border-color:var(--gold)}
+.small-note{font-size:10.5px;line-height:1.55;color:var(--text-dim);margin-top:9px}
+.source-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.source-links a{color:var(--gold);font-size:11px;text-decoration:none;border-bottom:1px dotted var(--gold)}
+</style>
+</head>
+<body>
+
+  <div id="ticker-wrap"><div id="ticker-track"></div></div>
+  <div id="app"></div>
+
+  <!-- Equity order modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="orderModal">
+      <button class="close-x" id="modalClose">&times;</button>
+      <div class="modal-head">
+        <div class="m-sym" id="mSym">—</div>
+        <div class="m-price mono" id="mPrice">LTP ₹0.00</div>
+      </div>
+      <div class="modal-body">
+        <div class="field"><label id="qtyLabel">Quantity</label><input type="number" id="qtyInput" min="1" value="1" /></div>
+        <div class="order-total"><span>Order Value</span><span id="orderTotal">₹0.00</span></div>
+        <div class="form-err" id="formErr"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-outline" id="modalCancel">Cancel</button>
+        <button class="btn" id="modalSubmit">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- F&O order modal -->
+  <div class="modal-overlay" id="fnoModalOverlay">
+    <div class="modal" id="fnoOrderModal">
+      <button class="close-x" id="fnoModalClose">&times;</button>
+      <div class="modal-head">
+        <div class="m-sym" id="fnoMSym">—</div>
+        <div class="m-price mono" id="fnoMPrice">—</div>
+      </div>
+      <div class="modal-body">
+        <div class="field"><label id="fnoLotsLabel">Lots</label><input type="number" id="fnoLotsInput" min="1" value="1" /></div>
+        <div class="order-total"><span>Est. Notional</span><span id="fnoOrderTotal">₹0.00</span></div>
+        <div class="form-err" id="fnoFormErr"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-outline" id="fnoModalCancel">Cancel</button>
+        <button class="btn" id="fnoModalSubmit">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ===================== DATA ===================== */
+function genRollNumbers(){ const l=[]; for(let i=1;i<=175;i++) l.push('25MBA'+String(i).padStart(2,'0')); return l; }
+const VALID_ROLLS = genRollNumbers();
+const STARTING_CASH = 1000000;
+
+/* ---- Sector-wise stock universe (NSE-style symbols, illustrative LTPs) ---- */
+function tag(sector, arr){ return arr.map(([sym,name,price]) => ({sym, name, sector, price})); }
+
+const IT_STOCKS = [
+  ['TCS','Tata Consultancy Services',3850],['INFY','Infosys Ltd',1620],['WIPRO','Wipro Ltd',480],
+  ['HCLTECH','HCL Technologies',1750],['TECHM','Tech Mahindra',1680],['LTIM','LTIMindtree',6200],
+  ['MPHASIS','Mphasis Ltd',2850],['PERSISTENT','Persistent Systems',5400],['COFORGE','Coforge Ltd',8200],
+  ['LTTS','L&T Technology Services',5600],['OFSS','Oracle Financial Services',9800],['KPITTECH','KPIT Technologies',1450],
+  ['ZENSARTECH','Zensar Technologies',780],['INTELLECT','Intellect Design Arena',950],['NEWGEN','Newgen Software',1150],
+  ['ROUTE','Route Mobile',1600],['HAPPSTMNDS','Happiest Minds Tech',750],['RATEGAIN','RateGain Travel Tech',620]
+];
+const BANKING_STOCKS = [
+  ['HDFCBANK','HDFC Bank',1680],['ICICIBANK','ICICI Bank',1150],['SBIN','State Bank of India',810],
+  ['KOTAKBANK','Kotak Mahindra Bank',1780],['AXISBANK','Axis Bank',1150],['INDUSINDBK','IndusInd Bank',1450],
+  ['BANKBARODA','Bank of Baroda',245],['PNB','Punjab National Bank',105],['CANBK','Canara Bank',105],
+  ['IDFCFIRSTB','IDFC First Bank',78],['FEDERALBNK','Federal Bank',195],['AUBANK','AU Small Finance Bank',650],
+  ['BANDHANBNK','Bandhan Bank',195],['RBLBANK','RBL Bank',220],['YESBANK','Yes Bank',22],
+  ['IOB','Indian Overseas Bank',55],['UNIONBANK','Union Bank of India',130],['INDIANB','Indian Bank',550],
+  ['UCOBANK','UCO Bank',48],['CENTRALBK','Central Bank of India',55],['J&KBANK','J&K Bank',110],
+  ['KARURVYSYA','Karur Vysya Bank',220],['CUB','City Union Bank',165],['DCBBANK','DCB Bank',140]
+];
+const NBFC_STOCKS = [
+  ['BAJFINANCE','Bajaj Finance',7200],['BAJAJFINSV','Bajaj Finserv',1750],['HDFCLIFE','HDFC Life Insurance',640],
+  ['SBILIFE','SBI Life Insurance',1550],['ICICIPRULI','ICICI Prudential Life',700],['ICICIGI','ICICI Lombard GI',1950],
+  ['SBICARD','SBI Cards',780],['MUTHOOTFIN','Muthoot Finance',2100],['CHOLAFIN','Cholamandalam Investment',1350],
+  ['LICHSGFIN','LIC Housing Finance',620],['PFC','Power Finance Corp',480],['RECLTD','REC Ltd',520],
+  ['IRFC','Indian Railway Finance Corp',165],['SHRIRAMFIN','Shriram Finance',3100],['MANAPPURAM','Manappuram Finance',190],
+  ['PNBHOUSING','PNB Housing Finance',950],['CDSL','Central Depository Services',1500],['BSE','BSE Ltd',4800],
+  ['MCX','Multi Commodity Exchange',6200],['IEX','Indian Energy Exchange',175]
+];
+const FMCG_STOCKS = [
+  ['HUL','Hindustan Unilever',2450],['ITC','ITC Ltd',460],['NESTLEIND','Nestle India',2380],
+  ['BRITANNIA','Britannia Industries',5600],['DABUR','Dabur India',550],['GODREJCP','Godrej Consumer',1250],
+  ['MARICO','Marico Ltd',650],['COLPAL','Colgate-Palmolive India',2850],['TATACONSUM','Tata Consumer Products',1080],
+  ['VBL','Varun Beverages',550],['UBL','United Breweries',2100],['MCDOWELL-N','United Spirits',1700],
+  ['EMAMILTD','Emami Ltd',780],['JYOTHYLAB','Jyothy Labs',420],['GILLETTE','Gillette India',9200],
+  ['PGHH','Procter & Gamble Hygiene',15500],['BAJAJCON','Bajaj Consumer Care',260],['RADICO','Radico Khaitan',1850]
+];
+const AUTO_STOCKS = [
+  ['MARUTI','Maruti Suzuki',11200],['TATAMOTORS','Tata Motors',920],['M&M','Mahindra & Mahindra',2650],
+  ['BAJAJ-AUTO','Bajaj Auto',9200],['EICHERMOT','Eicher Motors',4800],['HEROMOTOCO','Hero MotoCorp',4700],
+  ['TVSMOTOR','TVS Motor Company',2600],['ASHOKLEY','Ashok Leyland',220],['ESCORTS','Escorts Kubota',3400],
+  ['FORCEMOT','Force Motors',8500],['MRF','MRF Ltd',128000],['APOLLOTYRE','Apollo Tyres',480],
+  ['CEATLTD','CEAT Ltd',3100],['BALKRISIND','Balkrishna Industries',2900],['BOSCHLTD','Bosch Ltd',34000],
+  ['MOTHERSON','Samvardhana Motherson',145],['BHARATFORG','Bharat Forge',1250],['EXIDEIND','Exide Industries',450],
+  ['AMARAJABAT','Amara Raja Energy',950],['SUNDRMFAST','Sundram Fasteners',1050],['SONACOMS','Sona BLW Precision',620],
+  ['UNOMINDA','UNO Minda',950],['SCHAEFFLER','Schaeffler India',3900],['TIINDIA','Tube Investments',3500]
+];
+const PHARMA_STOCKS = [
+  ['SUNPHARMA','Sun Pharma',1780],['DRREDDY',"Dr. Reddy's Labs",6200],['CIPLA','Cipla Ltd',1490],
+  ['DIVISLAB',"Divi's Laboratories",4200],['LUPIN','Lupin Ltd',2150],['AUROPHARMA','Aurobindo Pharma',1350],
+  ['TORNTPHARM','Torrent Pharmaceuticals',3200],['ALKEM','Alkem Laboratories',5100],['ZYDUSLIFE','Zydus Lifesciences',1050],
+  ['MANKIND','Mankind Pharma',2500],['ABBOTINDIA','Abbott India',29000],['PFIZER','Pfizer Ltd',5200],
+  ['GLAXO','GSK Pharma India',2900],['IPCALAB','IPCA Laboratories',1450],['BIOCON','Biocon Ltd',380],
+  ['LAURUSLABS','Laurus Labs',620],['GLENMARK','Glenmark Pharmaceuticals',1450],['AJANTPHARM','Ajanta Pharma',3100],
+  ['NATCOPHARM','Natco Pharma',1150],['GRANULES','Granules India',620],['SANOFI','Sanofi India',8200],
+  ['JBCHEPHARM','JB Chemicals',1900]
+];
+const ENERGY_STOCKS = [
+  ['RELIANCE','Reliance Industries',2890],['ONGC','Oil & Natural Gas Corp',260],['NTPC','NTPC Ltd',380],
+  ['POWERGRID','Power Grid Corp',340],['COALINDIA','Coal India',460],['BPCL','Bharat Petroleum',340],
+  ['IOC','Indian Oil Corp',175],['HINDPETRO','Hindustan Petroleum',420],['GAIL','GAIL India',220],
+  ['OIL','Oil India',480],['PETRONET','Petronet LNG',350],['ADANIGREEN','Adani Green Energy',1150],
+  ['ADANIPOWER','Adani Power',620],['TATAPOWER','Tata Power',460],['NHPC','NHPC Ltd',105],
+  ['SJVN','SJVN Ltd',130],['TORNTPOWER','Torrent Power',1650],['CESC','CESC Ltd',200],
+  ['JSWENERGY','JSW Energy',720],['ADANIENSOL','Adani Energy Solutions',950]
+];
+const METALS_STOCKS = [
+  ['TATASTEEL','Tata Steel',165],['JSWSTEEL','JSW Steel',1050],['HINDALCO','Hindalco Industries',720],
+  ['VEDL','Vedanta Ltd',480],['JINDALSTEL','Jindal Steel & Power',980],['SAIL','Steel Authority of India',145],
+  ['NMDC','NMDC Ltd',250],['NATIONALUM','National Aluminium',220],['HINDZINC','Hindustan Zinc',620],
+  ['RATNAMANI','Ratnamani Metals',3500],['APLAPOLLO','APL Apollo Tubes',1650],['JSL','Jindal Stainless',720],
+  ['WELCORP','Welspun Corp',720],['MOIL','MOIL Ltd',420],['HINDCOPPER','Hindustan Copper',380],
+  ['LLOYDSME','Lloyds Metals & Energy',1050]
+];
+const CEMENT_STOCKS = [
+  ['ULTRACEMCO','UltraTech Cement',11500],['SHREECEM','Shree Cement',27500],['AMBUJACEM','Ambuja Cements',620],
+  ['ACC','ACC Ltd',2200],['DALBHARAT','Dalmia Bharat',2050],['JKCEMENT','JK Cement',4800],
+  ['RAMCOCEM','The Ramco Cements',1050],['HEIDELBERG','HeidelbergCement India',220],['INDIACEM','India Cements',320],
+  ['JKLAKSHMI','JK Lakshmi Cement',850]
+];
+const CAPGOODS_STOCKS = [
+  ['LT','Larsen & Toubro',3650],['SIEMENS','Siemens Ltd',6800],['ABB','ABB India',7200],
+  ['BHEL','Bharat Heavy Electricals',260],['CUMMINSIND','Cummins India',3600],['THERMAX','Thermax Ltd',5200],
+  ['HAVELLS','Havells India',1750],['POLYCAB','Polycab India',6800],['KEI','KEI Industries',4200],
+  ['CGPOWER','CG Power & Industrial',780],['SUZLON','Suzlon Energy',78],['KALPATPOWR','Kalpataru Projects',1450],
+  ['KEC','KEC International',950],['GRINDWELL','Grindwell Norton',1650],['ELGIEQUIP','Elgi Equipments',650],
+  ['TIMKEN','Timken India',3600]
+];
+const REALTY_STOCKS = [
+  ['DLF','DLF Ltd',850],['GODREJPROP','Godrej Properties',2650],['OBEROIRLTY','Oberoi Realty',1950],
+  ['PRESTIGE','Prestige Estates',1750],['PHOENIXLTD','Phoenix Mills',1850],['BRIGADE','Brigade Enterprises',1250],
+  ['SOBHA','Sobha Ltd',1850],['SUNTECK','Sunteck Realty',620],['MAHLIFE','Mahindra Lifespace',480],
+  ['LODHA','Macrotech Developers',1450]
+];
+const TELECOM_STOCKS = [
+  ['BHARTIARTL','Bharti Airtel',1590],['IDEA','Vodafone Idea',12],['INDUSTOWER','Indus Towers',380],
+  ['TATACOMM','Tata Communications',1850],['RAILTEL','RailTel Corp',420]
+];
+const MEDIA_STOCKS = [
+  ['ZEEL','Zee Entertainment',145],['SUNTV','Sun TV Network',620],['PVRINOX','PVR Inox',1450],
+  ['NETWORK18','Network18 Media',78],['TIPS','Tips Industries',620],['SAREGAMA','Saregama India',720]
+];
+const CHEM_FERT_STOCKS = [
+  ['PIDILITIND','Pidilite Industries',3100],['SRF','SRF Ltd',2650],['AARTIIND','Aarti Industries',720],
+  ['DEEPAKNTR','Deepak Nitrite',2450],['ATUL','Atul Ltd',8200],['NAVINFLUOR','Navin Fluorine',4800],
+  ['TATACHEM','Tata Chemicals',1050],['GNFC','Gujarat Narmada Valley',720],['GUJALKALI','Gujarat Alkalies',780],
+  ['FLUOROCHEM','Gujarat Fluorochemicals',3900],['UPL','UPL Ltd',620],['COROMANDEL','Coromandel International',1850],
+  ['CHAMBLFERT','Chambal Fertilisers',620],['RCF','Rashtriya Chemicals',145],['GSFC','Gujarat State Fertilizers',220],
+  ['BAYERCROP','Bayer CropScience',6800]
+];
+const CONSUMER_STOCKS = [
+  ['TITAN','Titan Company',3650],['WHIRLPOOL','Whirlpool of India',1650],['DIXON','Dixon Technologies',15000],
+  ['AMBER','Amber Enterprises',6800],['BATAINDIA','Bata India',1450],['RELAXO','Relaxo Footwears',720],
+  ['VGUARD','V-Guard Industries',480],['DMART','Avenue Supermarts',4200],['TRENT','Trent Ltd',6800],
+  ['VMART','V-Mart Retail',2650],['ABFRL','Aditya Birla Fashion',320],['KALYANKJIL','Kalyan Jewellers',620]
+];
+const TEXTILES_STOCKS = [
+  ['PAGEIND','Page Industries',42000],['TRIDENT','Trident Ltd',45],['WELSPUNIND','Welspun Living',180],
+  ['KPRMILL','KPR Mill',1150],['VARDHMAN','Vardhman Textiles',480],['ARVIND','Arvind Ltd',380]
+];
+const AVIATION_LOGISTICS_STOCKS = [
+  ['INDIGO','InterGlobe Aviation',4200],['SPICEJET','SpiceJet Ltd',65],['ADANIPORTS','Adani Ports & SEZ',1450],
+  ['CONCOR','Container Corp of India',950],['GMRINFRA','GMR Airports',95],['IRCTC','IRCTC Ltd',950],
+  ['DELHIVERY','Delhivery Ltd',420],['BLUEDART','Blue Dart Express',7800]
+];
+const PAINTS_STOCKS = [
+  ['ASIANPAINT','Asian Paints',2950],['BERGEPAINT','Berger Paints',620],['KANSAINER','Kansai Nerolac',320],
+  ['AKZOINDIA','Akzo Nobel India',3600]
+];
+const INSURANCE_STOCKS = [
+  ['NIACL','New India Assurance',220],['GICRE','GIC Re',480],['STARHEALTH','Star Health Insurance',620],
+  ['LICI','Life Insurance Corp',950]
+];
+const DEFENCE_STOCKS = [
+  ['HAL','Hindustan Aeronautics',4800],['BEL','Bharat Electronics',320],['MAZDOCK','Mazagon Dock',4800],
+  ['COCHINSHIP','Cochin Shipyard',2100],['BEML','BEML Ltd',4200],['GRSE','Garden Reach Shipbuilders',2400]
+];
+const NEWAGE_STOCKS = [
+  ['ZOMATO','Eternal (Zomato)',280],['PAYTM','One97 Communications',950],['NYKAA','FSN E-Commerce (Nykaa)',185],
+  ['POLICYBZR','PB Fintech',1650],['CARTRADE','CarTrade Tech',2100],['EASEMYTRIP','Easy Trip Planners',45],
+  ['JUSTDIAL','Just Dial',950],['INDIAMART','IndiaMART InterMESH',2650]
+];
+const SUGAR_AGRI_STOCKS = [
+  ['BALRAMCHIN','Balrampur Chini Mills',620],['TRIVENI','Triveni Engineering',480],
+  ['DHAMPURSUG','Dhampur Sugar Mills',320],['EIDPARRY','EID Parry India',780]
+];
+const PAPER_STOCKS = [
+  ['JKPAPER','JK Paper',480],['WSTCSTPAPR','West Coast Paper',620],['SESHAPAPER','Seshasayee Paper',220]
+];
+const SHIPPING_STOCKS = [
+  ['SCI','Shipping Corp of India',220],['GESHIP','Great Eastern Shipping',1050],['SHREYAS','Shreyas Shipping',620]
+];
+const HOSPITALITY_STOCKS = [
+  ['INDHOTEL','Indian Hotels Company',780],['EIHOTEL','EIH Ltd',480],['LEMONTREE','Lemon Tree Hotels',145],
+  ['CHALET','Chalet Hotels',850]
+];
+const BUILDING_MATERIALS_STOCKS = [
+  ['ASTRAL','Astral Ltd',1850],['SUPREMEIND','Supreme Industries',4800],['FINOLEX','Finolex Industries',320],
+  ['GREENPANEL','Greenpanel Industries',380]
+];
+const PSU_INFRA_STOCKS = [
+  ['RVNL','Rail Vikas Nigam',480],['NBCC','NBCC India',95],['NLCINDIA','NLC India',220],
+  ['NCC','NCC Ltd',320],['HUDCO','HUDCO Ltd',220],['IRCON','Ircon International',220]
+];
+const DIVERSIFIED_STOCKS = [
+  ['ADANIENT','Adani Enterprises',2950],['GRASIM','Grasim Industries',2650],['BAJAJHLDNG','Bajaj Holdings',12000],
+  ['CENTURYPLY','Century Plyboards',850]
+];
+
+const STOCK_SEED = [
+  ...tag('IT', IT_STOCKS),
+  ...tag('Banking', BANKING_STOCKS),
+  ...tag('NBFC & Financial Services', NBFC_STOCKS),
+  ...tag('FMCG', FMCG_STOCKS),
+  ...tag('Auto & Ancillaries', AUTO_STOCKS),
+  ...tag('Pharma & Healthcare', PHARMA_STOCKS),
+  ...tag('Energy & Power', ENERGY_STOCKS),
+  ...tag('Metals & Mining', METALS_STOCKS),
+  ...tag('Cement', CEMENT_STOCKS),
+  ...tag('Capital Goods & Infra', CAPGOODS_STOCKS),
+  ...tag('Realty', REALTY_STOCKS),
+  ...tag('Telecom', TELECOM_STOCKS),
+  ...tag('Media & Entertainment', MEDIA_STOCKS),
+  ...tag('Chemicals & Fertilizers', CHEM_FERT_STOCKS),
+  ...tag('Consumer Durables & Retail', CONSUMER_STOCKS),
+  ...tag('Textiles', TEXTILES_STOCKS),
+  ...tag('Aviation & Logistics', AVIATION_LOGISTICS_STOCKS),
+  ...tag('Paints', PAINTS_STOCKS),
+  ...tag('Insurance', INSURANCE_STOCKS),
+  ...tag('Defence', DEFENCE_STOCKS),
+  ...tag('New Age Tech', NEWAGE_STOCKS),
+  ...tag('Sugar & Agri', SUGAR_AGRI_STOCKS),
+  ...tag('Paper', PAPER_STOCKS),
+  ...tag('Shipping', SHIPPING_STOCKS),
+  ...tag('Hospitality', HOSPITALITY_STOCKS),
+  ...tag('Building Materials', BUILDING_MATERIALS_STOCKS),
+  ...tag('PSU & Infra Development', PSU_INFRA_STOCKS),
+  ...tag('Diversified', DIVERSIFIED_STOCKS)
+];
+let STOCKS = STOCK_SEED.map(s => ({...s, prevClose:s.price, ltp:s.price}));
+
+/* ---- F&O underlyings: Indices, liquid stock F&O, and MCX-style commodities ---- */
+const FNO_UNDERLYINGS = [
+  {sym:'NIFTY', name:'Nifty 50 Index', kind:'INDEX', spot:24500, sigma:0.13, lotSize:75, strikeStep:100},
+  {sym:'BANKNIFTY', name:'Bank Nifty Index', kind:'INDEX', spot:51500, sigma:0.15, lotSize:30, strikeStep:100},
+  {sym:'FINNIFTY', name:'Nifty Financial Services', kind:'INDEX', spot:23500, sigma:0.14, lotSize:65, strikeStep:50},
+
+  {sym:'RELIANCE', name:'Reliance Industries', kind:'STOCK', sigma:0.24, lotSize:250, strikeStep:20},
+  {sym:'TCS', name:'Tata Consultancy Services', kind:'STOCK', sigma:0.20, lotSize:150, strikeStep:50},
+  {sym:'HDFCBANK', name:'HDFC Bank', kind:'STOCK', sigma:0.19, lotSize:550, strikeStep:20},
+  {sym:'INFY', name:'Infosys Ltd', kind:'STOCK', sigma:0.22, lotSize:400, strikeStep:20},
+  {sym:'SBIN', name:'State Bank of India', kind:'STOCK', sigma:0.25, lotSize:1500, strikeStep:10},
+  {sym:'ICICIBANK', name:'ICICI Bank', kind:'STOCK', sigma:0.22, lotSize:700, strikeStep:20},
+  {sym:'AXISBANK', name:'Axis Bank', kind:'STOCK', sigma:0.24, lotSize:625, strikeStep:20},
+  {sym:'TATAMOTORS', name:'Tata Motors', kind:'STOCK', sigma:0.30, lotSize:1400, strikeStep:20},
+  {sym:'MARUTI', name:'Maruti Suzuki', kind:'STOCK', sigma:0.22, lotSize:50, strikeStep:200},
+  {sym:'BAJFINANCE', name:'Bajaj Finance', kind:'STOCK', sigma:0.28, lotSize:125, strikeStep:100},
+  {sym:'ITC', name:'ITC Ltd', kind:'STOCK', sigma:0.18, lotSize:3200, strikeStep:10},
+  {sym:'SUNPHARMA', name:'Sun Pharma', kind:'STOCK', sigma:0.22, lotSize:700, strikeStep:20},
+  {sym:'HUL', name:'Hindustan Unilever', kind:'STOCK', sigma:0.16, lotSize:300, strikeStep:50},
+  {sym:'KOTAKBANK', name:'Kotak Mahindra Bank', kind:'STOCK', sigma:0.20, lotSize:400, strikeStep:20},
+  {sym:'LT', name:'Larsen & Toubro', kind:'STOCK', sigma:0.22, lotSize:150, strikeStep:50},
+
+  {sym:'GOLD', name:'Gold (per 10g)', kind:'COMMODITY', spot:78000, sigma:0.14, lotSize:10, strikeStep:500},
+  {sym:'SILVER', name:'Silver (per kg)', kind:'COMMODITY', spot:92000, sigma:0.20, lotSize:5, strikeStep:1000},
+  {sym:'CRUDEOIL', name:'Crude Oil (per bbl)', kind:'COMMODITY', spot:6200, sigma:0.30, lotSize:10, strikeStep:100},
+  {sym:'NATURALGAS', name:'Natural Gas (per mmBtu)', kind:'COMMODITY', spot:245, sigma:0.35, lotSize:250, strikeStep:5},
+  {sym:'COPPER', name:'Copper (per kg)', kind:'COMMODITY', spot:820, sigma:0.22, lotSize:250, strikeStep:10},
+  {sym:'ZINC', name:'Zinc (per kg)', kind:'COMMODITY', spot:265, sigma:0.24, lotSize:500, strikeStep:5},
+  {sym:'ALUMINIUM', name:'Aluminium (per kg)', kind:'COMMODITY', spot:245, sigma:0.20, lotSize:500, strikeStep:5},
+  {sym:'LEAD', name:'Lead (per kg)', kind:'COMMODITY', spot:185, sigma:0.22, lotSize:500, strikeStep:5},
+  {sym:'NICKEL', name:'Nickel (per kg)', kind:'COMMODITY', spot:1450, sigma:0.28, lotSize:150, strikeStep:20},
+  {sym:'COTTON', name:'Cotton (per bale)', kind:'COMMODITY', spot:58000, sigma:0.18, lotSize:5, strikeStep:200},
+  {sym:'MENTHAOIL', name:'Mentha Oil (per kg)', kind:'COMMODITY', spot:950, sigma:0.25, lotSize:180, strikeStep:10},
+  {sym:'CPO', name:'Crude Palm Oil (per 10kg)', kind:'COMMODITY', spot:920, sigma:0.20, lotSize:100, strikeStep:10},
+  {sym:'KAPAS', name:'Kapas (per 20kg)', kind:'COMMODITY', spot:1650, sigma:0.18, lotSize:100, strikeStep:20},
+  {sym:'GUARSEED', name:'Guar Seed (per 100kg)', kind:'COMMODITY', spot:5200, sigma:0.30, lotSize:20, strikeStep:50},
+  {sym:'GUARGUM', name:'Guar Gum (per 100kg)', kind:'COMMODITY', spot:11500, sigma:0.30, lotSize:15, strikeStep:100}
+];
+let INDICES = FNO_UNDERLYINGS.filter(u=>u.kind==='INDEX').map(u=>({sym:u.sym, name:u.name, price:u.spot, prevClose:u.spot, ltp:u.spot}));
+let COMMODITIES = FNO_UNDERLYINGS.filter(u=>u.kind==='COMMODITY').map(u=>({sym:u.sym, name:u.name, price:u.spot, prevClose:u.spot, ltp:u.spot}));
+
+/* Curated ticker watchlist so the scrolling strip stays performant on mobile */
+const TICKER_SYMS = ['NIFTY','BANKNIFTY','FINNIFTY','GOLD','SILVER','CRUDEOIL','RELIANCE','TCS','HDFCBANK','INFY',
+  'ICICIBANK','SBIN','ITC','HUL','MARUTI','TATAMOTORS','SUNPHARMA','BHARTIARTL','LT','KOTAKBANK',
+  'AXISBANK','BAJFINANCE','ADANIENT','TATASTEEL','ASIANPAINT','TITAN','DMART','ZOMATO','ULTRACEMCO','WIPRO'];
+
+const EXPIRY_DATE = new Date('2026-09-25T15:30:00');
+const RISK_FREE = 0.065;
+let candleHistory = {};
+const CANDLE_MS = 60000; // 1-minute candles
+
+/* ===================== STATE ===================== */
+let currentRoll = null;
+let portfolio = defaultPortfolio();
+let activeTab = 'market';
+let pendingOrder = null;
+let pendingFno = null;
+let fnoSubTab = 'futures';
+let fnoSelectedUnderlying = 'NIFTY';
+let chartSelectedSym = 'NIFTY';
+let marketSector = 'ALL';
+let fnoSearchQuery = '';
+const sessionSalt = Math.random().toString(36).slice(2,8);
+
+function defaultPortfolio(){ return { cash: STARTING_CASH, holdings:{}, transactions:[], fno:{ positions:{}, transactions:[] } }; }
+
+/* ===================== STORAGE (works in Claude artifacts AND standalone deploys) ===================== */
+const hasArtifactStorage = (typeof window !== 'undefined') && !!window.storage && typeof window.storage.get === 'function';
+async function storageGet(key, shared){
+  if(hasArtifactStorage){
+    try{ return await window.storage.get(key, !!shared); }catch(e){ return null; }
+  }
+  try{
+    const raw = localStorage.getItem((shared?'pf_shared_':'pf_local_') + key);
+    return raw !== null ? {key, value: raw, shared: !!shared} : null;
+  }catch(e){ return null; }
+}
+async function storageSet(key, value, shared){
+  if(hasArtifactStorage){
+    try{ return await window.storage.set(key, value, !!shared); }catch(e){ return null; }
+  }
+  try{
+    localStorage.setItem((shared?'pf_shared_':'pf_local_') + key, value);
+    return {key, value, shared: !!shared};
+  }catch(e){ return null; }
+}
+async function loadPortfolio(roll){
+  try{
+    const res = await storageGet('pf_user_' + roll, false);
+    if(res && res.value){
+      const parsed = JSON.parse(res.value);
+      if(!parsed.fno) parsed.fno = { positions:{}, transactions:[] };
+      return parsed;
+    }
+  }catch(e){ /* no existing record */ }
+  return defaultPortfolio();
+}
+async function savePortfolio(roll, data){
+  try{ await storageSet('pf_user_' + roll, JSON.stringify(data), false); }
+  catch(e){ console.error('storage save failed', e); }
+}
+
+/* ===================== HELPERS ===================== */
+function inr(n){ return '₹' + Number(n||0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function pct(n){ return (n>=0?'+':'') + n.toFixed(2) + '%'; }
+function getSpot(sym){
+  const idx = INDICES.find(i=>i.sym===sym); if(idx) return idx.ltp;
+  const cm = COMMODITIES.find(c=>c.sym===sym); if(cm) return cm.ltp;
+  const st = STOCKS.find(s=>s.sym===sym); return st ? st.ltp : 0;
+}
+function daysToExpiry(){ return Math.max(1, Math.ceil((EXPIRY_DATE - Date.now())/86400000)); }
+function futPrice(spot){ return Number((spot*(1 + RISK_FREE*daysToExpiry()/365)).toFixed(2)); }
+function erf(x){
+  const sign = x<0?-1:1; x=Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t=1/(1+p*x);
+  const y=1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function normCDF(x){ return 0.5*(1+erf(x/Math.sqrt(2))); }
+function bsPrice(spot,strike,tYears,r,sigma,type){
+  if(tYears<=0) tYears=0.0007;
+  const d1=(Math.log(spot/strike)+(r+0.5*sigma*sigma)*tYears)/(sigma*Math.sqrt(tYears));
+  const d2=d1-sigma*Math.sqrt(tYears);
+  const val = type==='CE'
+    ? spot*normCDF(d1) - strike*Math.exp(-r*tYears)*normCDF(d2)
+    : strike*Math.exp(-r*tYears)*normCDF(-d2) - spot*normCDF(-d1);
+  return Math.max(0.05, val);
+}
+function getOptionChain(underlyingSym){
+  const cfg = FNO_UNDERLYINGS.find(u=>u.sym===underlyingSym);
+  const spot = getSpot(underlyingSym);
+  const step = cfg.strikeStep;
+  const atm = Math.round(spot/step)*step;
+  const strikes = [];
+  for(let i=-5;i<=5;i++) strikes.push(atm+i*step);
+  const t = daysToExpiry()/365;
+  return strikes.map(k=>({ strike:k, ce:Number(bsPrice(spot,k,t,RISK_FREE,cfg.sigma,'CE').toFixed(2)), pe:Number(bsPrice(spot,k,t,RISK_FREE,cfg.sigma,'PE').toFixed(2)) }));
+}
+
+/* ===================== CANDLE HISTORY SEED ===================== */
+function pushCandleTick(sym, price){
+  const bucket = Math.floor(Date.now()/CANDLE_MS)*CANDLE_MS;
+  if(!candleHistory[sym]) candleHistory[sym] = [];
+  const arr = candleHistory[sym];
+  const last = arr[arr.length-1];
+  if(last && last.t===bucket){
+    last.h = Math.max(last.h, price);
+    last.l = Math.min(last.l, price);
+    last.c = price;
+  } else {
+    arr.push({ t:bucket, o:price, h:price, l:price, c:price });
+    if(arr.length>90) arr.shift();
+  }
+}
+function seedCandleHistory(){
+  const bucketNow = Math.floor(Date.now()/CANDLE_MS)*CANDLE_MS;
+  [...STOCKS, ...INDICES, ...COMMODITIES].forEach(inst=>{
+    let p = inst.ltp;
+    const bars = [];
+    for(let i=44;i>=0;i--){
+      const t = bucketNow - i*CANDLE_MS;
+      const o = p; let h=o, l=o;
+      for(let k=0;k<5;k++){ p = p/(1+(Math.random()-0.5)*0.012); h=Math.max(h,p); l=Math.min(l,p); }
+      const c = p;
+      bars.push({ t, o:Number(o.toFixed(2)), h:Number(h.toFixed(2)), l:Number(l.toFixed(2)), c:Number(c.toFixed(2)) });
+    }
+    candleHistory[inst.sym] = bars;
+  });
+}
+
+/* ===================== TICKER ===================== */
+function renderTicker(){
+  const track = document.getElementById('ticker-track');
+  const all = [...INDICES, ...COMMODITIES, ...STOCKS];
+  const buildSet = () => TICKER_SYMS.map(sym=>{
+    const s = all.find(x=>x.sym===sym); if(!s) return '';
+    const chg = s.ltp - s.prevClose; const chgPct=(chg/s.prevClose)*100;
+    const cls = chg>=0?'up':'dn'; const arrow = chg>=0?'▲':'▼';
+    return `<span class="tick-item"><span class="sym">${s.sym}</span><span>${inr(s.ltp)}</span><span class="${cls}">${arrow} ${pct(chgPct)}</span></span>`;
+  }).join('');
+  track.innerHTML = buildSet() + buildSet();
+}
+
+/* ===================== PRICE SIMULATION ===================== */
+function tickPrices(){
+  STOCKS = STOCKS.map(s=>{ const drift=(Math.random()-0.5)*0.006; return {...s, ltp:Number(Math.max(1,s.ltp*(1+drift)).toFixed(2))}; });
+  INDICES = INDICES.map(s=>{ const drift=(Math.random()-0.5)*0.003; return {...s, ltp:Number(Math.max(1,s.ltp*(1+drift)).toFixed(2))}; });
+  COMMODITIES = COMMODITIES.map(s=>{ const drift=(Math.random()-0.5)*0.007; return {...s, ltp:Number(Math.max(0.1,s.ltp*(1+drift)).toFixed(2))}; });
+  [...STOCKS, ...INDICES, ...COMMODITIES].forEach(inst=> pushCandleTick(inst.sym, inst.ltp));
+  renderTicker();
+  if(currentRoll){
+    if(activeTab==='market') renderMarketTable();
+    if(activeTab==='portfolio') renderPortfolioTable();
+    if(activeTab==='fno') refreshFnoSub();
+    if(activeTab==='chart') refreshChart();
+    renderSummaryStats();
+  }
+}
+setInterval(tickPrices, 2500);
+
+/* ===================== LOGIN ===================== */
+function resetSessionState(){
+  currentRoll = null;
+  portfolio = defaultPortfolio();
+  activeTab = 'market';
+  fnoSubTab = 'futures';
+  marketSector = 'ALL';
+  fnoSelectedUnderlying = 'NIFTY';
+  chartSelectedSym = 'NIFTY';
+  fnoSearchQuery = '';
+  pendingOrder = null;
+  pendingFno = null;
+  const mo = document.getElementById('modalOverlay'); if(mo) mo.classList.remove('show');
+  const fo = document.getElementById('fnoModalOverlay'); if(fo) fo.classList.remove('show');
+}
+function renderLogin(){
+  resetSessionState();
+  document.getElementById('app').innerHTML = `
+    <div class="gate">
+      <div class="gate-card">
+        <div class="gate-head">
+          <div class="gate-brand">PAPER<span>FLOOR</span></div>
+          <div class="gate-sub">Trading Floor Access</div>
+        </div>
+        <div class="gate-body">
+          <div class="gate-error" id="loginErr"></div>
+          <div class="field"><label>Roll Number</label><input type="text" id="rollInput" name="rf_${sessionSalt}" placeholder="25MBA01" autocomplete="off" autocapitalize="characters" spellcheck="false" data-lpignore="true" data-1p-ignore /></div>
+          <div class="field">
+            <label>Password</label>
+            <input type="password" id="passInput" name="pf_${sessionSalt}" placeholder="Same as roll number" autocomplete="new-password" spellcheck="false" data-lpignore="true" data-1p-ignore />
+            <div class="field-hint">Your password is your roll number, entered exactly as issued (e.g. 25MBA01). On a shared computer, always log out when you're done — this leaves the machine ready for the next student to sign in fresh.</div>
+          </div>
+          <button class="btn" id="loginBtn">Enter Floor</button>
+        </div>
+        <div class="gate-note">Access is restricted to registered roll numbers 25MBA01 – 25MBA175. Each roll number's portfolio is kept completely separate, even on a shared computer.</div>
+      </div>
+    </div>`;
+  const rollEl = document.getElementById('rollInput');
+  const passEl = document.getElementById('passInput');
+  // Defeat browser/password-manager autofill that can silently repopulate the
+  // previous student's credentials on a shared computer.
+  rollEl.value=''; passEl.value='';
+  setTimeout(()=>{ rollEl.value=''; passEl.value=''; }, 60);
+  document.getElementById('loginBtn').addEventListener('click', doLogin);
+  passEl.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+  rollEl.addEventListener('keydown', e=>{ if(e.key==='Enter') passEl.focus(); });
+  rollEl.focus();
+}
+async function doLogin(){
+  const roll = document.getElementById('rollInput').value.trim().toUpperCase();
+  const pass = document.getElementById('passInput').value.trim().toUpperCase();
+  const errBox = document.getElementById('loginErr');
+  if(!VALID_ROLLS.includes(roll)){ errBox.textContent='Roll number not recognised. Valid range: 25MBA01 – 25MBA175.'; errBox.style.display='block'; return; }
+  if(roll !== pass){ errBox.textContent='Password must match your roll number exactly.'; errBox.style.display='block'; return; }
+  errBox.style.display='none';
+  currentRoll = roll;
+  portfolio = await loadPortfolio(roll);
+  activeTab = 'market';
+  renderDashboard();
+}
+
+/* ===================== DASHBOARD SHELL ===================== */
+function renderDashboard(){
+  document.getElementById('app').innerHTML = `
+    <div class="topbar">
+      <div class="topbar-left"><div class="topbar-brand">PAPER<span>FLOOR</span></div><div class="badge-roll">${currentRoll}</div></div>
+      <div class="topbar-right">
+        <div class="cash-pill"><span class="lbl">Cash Balance</span><span id="cashVal">${inr(portfolio.cash)}</span></div>
+        <button class="logout-btn" id="logoutBtn">Log Out</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn" data-tab="market">Market Watch</button>
+      <button class="tab-btn" data-tab="portfolio">Portfolio</button>
+      <button class="tab-btn" data-tab="fno">F&amp;O</button>
+      <button class="tab-btn" data-tab="chart">Chart</button>
+      <button class="tab-btn" data-tab="orders">Order History</button>
+      <button class="tab-btn" data-tab="fundamentals">Fundamentals</button>
+      <button class="tab-btn" data-tab="mutualfunds">Mutual Funds</button>
+      <button class="tab-btn" data-tab="live">Live Data</button>
+    </div>
+    <div class="content" id="tabContent"></div>`;
+  document.getElementById('logoutBtn').addEventListener('click', ()=> renderLogin());
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ activeTab = btn.dataset.tab; refreshTabs(); });
+  });
+  refreshTabs();
+}
+function refreshTabs(){
+  document.querySelectorAll('#app > .tabs > .tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.tab===activeTab));
+  if(activeTab==='market') renderMarketTab();
+  if(activeTab==='portfolio') renderPortfolioTab();
+  if(activeTab==='fno') renderFnoTab();
+  if(activeTab==='chart') renderChartTab();
+  if(activeTab==='orders') renderOrdersTab();
+  if(activeTab==='fundamentals') renderFundamentalsTab();
+  if(activeTab==='mutualfunds') renderMutualFundsTab();
+  if(activeTab==='live') renderLiveDataTab();
+}
+
+/* ===================== SUMMARY STATS ===================== */
+function computeHoldingsValue(){
+  let value=0, cost=0;
+  Object.entries(portfolio.holdings).forEach(([sym,h])=>{
+    const stock = STOCKS.find(s=>s.sym===sym);
+    if(stock && h.qty>0){ value += stock.ltp*h.qty; cost += h.avgCost*h.qty; }
+  });
+  return {value, cost, pnl:value-cost};
+}
+function computeFnoSummary(){
+  let marginBlocked=0, unrealizedPnL=0, longOptValue=0;
+  Object.values(portfolio.fno.positions).forEach(pos=>{
+    const spot = getSpot(pos.underlying);
+    if(pos.kind==='FUT'){
+      const cur = futPrice(spot);
+      const pnl = pos.side==='long' ? (cur-pos.avgPrice)*pos.lots*pos.lotSize : (pos.avgPrice-cur)*pos.lots*pos.lotSize;
+      unrealizedPnL += pnl; marginBlocked += pos.margin;
+    } else {
+      const cfg = FNO_UNDERLYINGS.find(u=>u.sym===pos.underlying);
+      const cur = bsPrice(spot, pos.strike, daysToExpiry()/365, RISK_FREE, cfg.sigma, pos.optType);
+      if(pos.side==='long'){ longOptValue += cur*pos.lots*pos.lotSize; }
+      else { unrealizedPnL += (pos.avgPrice-cur)*pos.lots*pos.lotSize; marginBlocked += pos.margin; }
+    }
+  });
+  return {marginBlocked, unrealizedPnL, longOptValue};
+}
+function renderSummaryStats(){
+  const box = document.getElementById('summaryStats');
+  if(!box) return;
+  const {value, cost, pnl} = computeHoldingsValue();
+  const fno = computeFnoSummary();
+  const net = portfolio.cash + value + fno.marginBlocked + fno.unrealizedPnL + fno.longOptValue;
+  const pnlPct = cost>0 ? (pnl/cost)*100 : 0;
+  box.innerHTML = `
+    <div class="stat-card"><div class="lbl">Net Worth</div><div class="val">${inr(net)}</div></div>
+    <div class="stat-card"><div class="lbl">Cash</div><div class="val">${inr(portfolio.cash)}</div></div>
+    <div class="stat-card"><div class="lbl">Equity Value</div><div class="val">${inr(value)}</div></div>
+    <div class="stat-card"><div class="lbl">Equity P&amp;L</div><div class="val ${pnl>=0?'up':'dn'}">${pnl>=0?'+':''}${inr(pnl)} (${pct(pnlPct)})</div></div>
+    <div class="stat-card"><div class="lbl">F&amp;O Margin Blocked</div><div class="val">${inr(fno.marginBlocked)}</div></div>
+    <div class="stat-card"><div class="lbl">F&amp;O Unrealised P&amp;L</div><div class="val ${fno.unrealizedPnL>=0?'up':'dn'}">${fno.unrealizedPnL>=0?'+':''}${inr(fno.unrealizedPnL)}</div></div>`;
+  const cashVal = document.getElementById('cashVal');
+  if(cashVal) cashVal.textContent = inr(portfolio.cash);
+}
+
+/* ===================== MARKET TAB (equity, sector-wise) ===================== */
+function renderMarketTab(){
+  const sectors = ['ALL', ...Array.from(new Set(STOCKS.map(s=>s.sector))).sort()];
+  document.getElementById('tabContent').innerHTML = `
+    <div class="section-title">Market Watch</div>
+    <div class="grid-summary" id="summaryStats"></div>
+    <div class="field" style="max-width:280px; margin-bottom:16px;">
+      <label>Sector</label>
+      <select id="sectorSelect">${sectors.map(s=>`<option value="${s}" ${s===marketSector?'selected':''}>${s==='ALL'?'All Sectors ('+STOCKS.length+' stocks)':s}</option>`).join('')}</select>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>Symbol</th><th>LTP</th><th>Chg %</th><th></th></tr></thead><tbody id="marketBody"></tbody></table></div>`;
+  document.getElementById('sectorSelect').addEventListener('change', e=>{ marketSector=e.target.value; renderMarketTable(); });
+  renderSummaryStats(); renderMarketTable();
+}
+function stockRowHtml(s){
+  const chg = s.ltp-s.prevClose; const chgPct=(chg/s.prevClose)*100; const cls=chg>=0?'up':'dn';
+  return `<tr>
+    <td><strong>${s.sym}</strong><div class="name-sub">${s.name}</div></td>
+    <td>${inr(s.ltp)}</td><td class="chg ${cls}">${pct(chgPct)}</td>
+    <td class="row-actions">
+      <button class="mini-btn btn-buy" data-sym="${s.sym}" data-side="buy">Buy</button>
+      <button class="mini-btn btn-sell" data-sym="${s.sym}" data-side="sell">Sell</button>
+    </td></tr>`;
+}
+function renderMarketTable(){
+  const body = document.getElementById('marketBody'); if(!body) return;
+  let rowsHtml = '';
+  if(marketSector==='ALL'){
+    const bySector = {};
+    STOCKS.forEach(s=>{ (bySector[s.sector] = bySector[s.sector]||[]).push(s); });
+    Object.keys(bySector).sort().forEach(sec=>{
+      rowsHtml += `<tr class="sector-head-row"><td colspan="4">${sec} <span style="color:var(--text-dim); font-weight:400;">(${bySector[sec].length})</span></td></tr>`;
+      rowsHtml += bySector[sec].map(stockRowHtml).join('');
+    });
+  } else {
+    rowsHtml = STOCKS.filter(s=>s.sector===marketSector).map(stockRowHtml).join('');
+  }
+  body.innerHTML = rowsHtml;
+  body.querySelectorAll('.mini-btn').forEach(btn=> btn.addEventListener('click', ()=> openOrderModal(btn.dataset.sym, btn.dataset.side)));
+}
+
+/* ===================== PORTFOLIO TAB (equity) ===================== */
+function renderPortfolioTab(){
+  document.getElementById('tabContent').innerHTML = `
+    <div class="section-title">Portfolio</div>
+    <div class="grid-summary" id="summaryStats"></div>
+    <div class="table-wrap" id="portfolioWrap"></div>`;
+  renderSummaryStats(); renderPortfolioTable();
+}
+function renderPortfolioTable(){
+  const wrap = document.getElementById('portfolioWrap'); if(!wrap) return;
+  const rows = Object.entries(portfolio.holdings).filter(([,h])=>h.qty>0);
+  if(rows.length===0){ wrap.innerHTML = `<div class="empty-state">No open equity positions. Head to Market Watch to place your first trade.</div>`; return; }
+  wrap.innerHTML = `<table><thead><tr><th>Symbol</th><th>Qty</th><th>Avg Cost</th><th>LTP</th><th>Value</th><th>P&amp;L</th><th></th></tr></thead>
+    <tbody>${rows.map(([sym,h])=>{
+      const stock = STOCKS.find(s=>s.sym===sym); const ltp = stock?stock.ltp:h.avgCost;
+      const value = ltp*h.qty; const pnl=(ltp-h.avgCost)*h.qty; const pnlPct=h.avgCost>0?((ltp-h.avgCost)/h.avgCost)*100:0;
+      const cls = pnl>=0?'up':'dn';
+      return `<tr><td><strong>${sym}</strong></td><td>${h.qty}</td><td>${inr(h.avgCost)}</td><td>${inr(ltp)}</td><td>${inr(value)}</td>
+        <td class="chg ${cls}">${pnl>=0?'+':''}${inr(pnl)} (${pct(pnlPct)})</td>
+        <td class="row-actions"><button class="mini-btn btn-sell" data-sym="${sym}" data-side="sell">Sell</button></td></tr>`;
+    }).join('')}</tbody></table>`;
+  wrap.querySelectorAll('.mini-btn').forEach(btn=> btn.addEventListener('click', ()=> openOrderModal(btn.dataset.sym, btn.dataset.side)));
+}
+
+/* ===================== ORDERS TAB (equity + F&O combined log) ===================== */
+function renderOrdersTab(){
+  const eq = portfolio.transactions.map(t=>({...t, kind:'EQUITY'}));
+  const fno = portfolio.fno.transactions.map(t=>({...t}));
+  const all = [...eq, ...fno].sort((a,b)=>b.time-a.time);
+  const el = document.getElementById('tabContent');
+  el.innerHTML = `<div class="section-title">Order History</div>
+    <div class="table-wrap">${all.length===0 ? `<div class="empty-state">No orders placed yet.</div>` : `
+    <table><thead><tr><th>Time</th><th>Instrument</th><th>Type</th><th>Side</th><th>Qty/Lots</th><th>Price</th><th>Total</th></tr></thead>
+    <tbody>${all.map(t=>{
+      const label = t.kind==='EQUITY' ? t.sym : (t.kind==='FUT' ? t.underlying+' FUT' : t.underlying+' '+t.strike+' '+t.optType);
+      const qty = t.kind==='EQUITY' ? t.qty : t.lots;
+      const lotOrShare = t.kind==='EQUITY' ? (t.qty*t.price) : (t.lots * (FNO_UNDERLYINGS.find(u=>u.sym===t.underlying)?.lotSize||1) * t.price);
+      return `<tr><td>${new Date(t.time).toLocaleString('en-IN')}</td><td><strong>${label}</strong></td>
+        <td>${t.kind}</td><td class="chg ${t.side==='buy'?'up':'dn'}">${t.side.toUpperCase()}</td>
+        <td>${qty}</td><td>${inr(t.price)}</td><td>${inr(lotOrShare)}</td></tr>`;
+    }).join('')}</tbody></table>`}</div>`;
+}
+
+/* ===================== EQUITY ORDER MODAL ===================== */
+function openOrderModal(sym, side){
+  const stock = STOCKS.find(s=>s.sym===sym); if(!stock) return;
+  pendingOrder = {sym, side};
+  document.getElementById('mSym').textContent = sym;
+  document.getElementById('mPrice').textContent = 'LTP ' + inr(stock.ltp);
+  document.getElementById('qtyInput').value = 1;
+  document.getElementById('qtyLabel').textContent = side==='buy' ? 'Quantity to Buy' : 'Quantity to Sell';
+  document.getElementById('formErr').style.display = 'none';
+  const modal = document.getElementById('orderModal');
+  modal.className = 'modal ' + (side==='buy' ? 'buy-mode':'sell-mode');
+  const submitBtn = document.getElementById('modalSubmit');
+  submitBtn.className = 'btn ' + (side==='buy'?'btn-buy':'btn-sell');
+  submitBtn.textContent = side==='buy' ? 'Confirm Buy' : 'Confirm Sell';
+  updateOrderTotal();
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function updateOrderTotal(){
+  if(!pendingOrder) return;
+  const stock = STOCKS.find(s=>s.sym===pendingOrder.sym);
+  const qty = Math.max(0, parseInt(document.getElementById('qtyInput').value)||0);
+  document.getElementById('orderTotal').textContent = inr(stock.ltp*qty);
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); pendingOrder=null; }
+async function submitOrder(){
+  if(!pendingOrder) return;
+  const {sym, side} = pendingOrder;
+  const stock = STOCKS.find(s=>s.sym===sym);
+  const qty = parseInt(document.getElementById('qtyInput').value)||0;
+  const errBox = document.getElementById('formErr');
+  if(qty<=0){ errBox.textContent='Enter a quantity greater than zero.'; errBox.style.display='block'; return; }
+  const cost = stock.ltp*qty;
+  if(side==='buy'){
+    if(cost > portfolio.cash){ errBox.textContent='Insufficient cash balance for this order.'; errBox.style.display='block'; return; }
+    const existing = portfolio.holdings[sym] || {qty:0, avgCost:0};
+    const newQty = existing.qty+qty;
+    const newAvg = ((existing.avgCost*existing.qty)+cost)/newQty;
+    portfolio.holdings[sym] = {qty:newQty, avgCost:Number(newAvg.toFixed(2))};
+    portfolio.cash = Number((portfolio.cash-cost).toFixed(2));
+  } else {
+    const existing = portfolio.holdings[sym] || {qty:0, avgCost:0};
+    if(qty > existing.qty){ errBox.textContent='You only hold '+existing.qty+' shares of '+sym+'.'; errBox.style.display='block'; return; }
+    existing.qty -= qty; portfolio.holdings[sym]=existing;
+    portfolio.cash = Number((portfolio.cash+cost).toFixed(2));
+  }
+  portfolio.transactions.push({time:Date.now(), sym, side, qty, price:stock.ltp});
+  await savePortfolio(currentRoll, portfolio);
+  closeModal(); refreshTabs();
+}
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('modalCancel').addEventListener('click', closeModal);
+document.getElementById('modalSubmit').addEventListener('click', submitOrder);
+document.getElementById('qtyInput').addEventListener('input', updateOrderTotal);
+document.getElementById('modalOverlay').addEventListener('click', e=>{ if(e.target.id==='modalOverlay') closeModal(); });
+
+/* ===================== F&O TAB ===================== */
+function renderFnoTab(){
+  document.getElementById('tabContent').innerHTML = `
+    <div class="section-title">Futures &amp; Options</div>
+    <div class="grid-summary" id="summaryStats"></div>
+    <div class="field" style="max-width:320px; margin-bottom:16px;">
+      <label>Search Contracts</label>
+      <input type="text" id="fnoSearchInput" placeholder="Search by symbol or name (e.g. GOLD, BANK, RELIANCE)" autocomplete="off" value="${fnoSearchQuery}" />
+    </div>
+    <div class="tabs subtabs">
+      <button class="tab-btn" data-fsub="futures">Futures</button>
+      <button class="tab-btn" data-fsub="options">Options</button>
+      <button class="tab-btn" data-fsub="positions">Positions</button>
+    </div>
+    <div id="fnoSubContent"></div>`;
+  renderSummaryStats();
+  document.querySelectorAll('[data-fsub]').forEach(btn=> btn.addEventListener('click', ()=>{ fnoSubTab=btn.dataset.fsub; refreshFnoSub(); }));
+  const searchEl = document.getElementById('fnoSearchInput');
+  searchEl.addEventListener('input', e=>{ fnoSearchQuery = e.target.value; refreshFnoSub(); });
+  searchEl.addEventListener('keydown', e=>{ if(e.key==='Escape'){ fnoSearchQuery=''; searchEl.value=''; refreshFnoSub(); } });
+  refreshFnoSub();
+}
+function matchesFnoSearch(u){
+  const q = fnoSearchQuery.trim().toLowerCase();
+  if(!q) return true;
+  return u.sym.toLowerCase().includes(q) || u.name.toLowerCase().includes(q);
+}
+function refreshFnoSub(){
+  document.querySelectorAll('[data-fsub]').forEach(b=> b.classList.toggle('active', b.dataset.fsub===fnoSubTab));
+  if(fnoSubTab==='futures') renderFuturesList();
+  if(fnoSubTab==='options') renderOptionsChainUI();
+  if(fnoSubTab==='positions') renderPositionsList();
+}
+const KIND_LABEL = {INDEX:'Indices', STOCK:'Stock F&O', COMMODITY:'Commodities (MCX-style)'};
+function renderFuturesList(){
+  const el = document.getElementById('fnoSubContent'); if(!el) return;
+  let rows = '';
+  let anyMatch = false;
+  ['INDEX','STOCK','COMMODITY'].forEach(kind=>{
+    const list = FNO_UNDERLYINGS.filter(u=>u.kind===kind && matchesFnoSearch(u));
+    if(list.length===0) return;
+    anyMatch = true;
+    rows += `<tr class="sector-head-row"><td colspan="7">${KIND_LABEL[kind]}</td></tr>`;
+    rows += list.map(u=>{
+      const spot=getSpot(u.sym); const fp=futPrice(spot); const margin=fp*u.lotSize*0.12;
+      return `<tr><td><strong>${u.sym}</strong><div class="name-sub">${u.name}</div></td><td>${inr(spot)}</td><td>${inr(fp)}</td><td>${u.lotSize}</td><td>${inr(margin)}</td><td>${daysToExpiry()}d</td>
+        <td class="row-actions"><button class="mini-btn btn-buy" data-sym="${u.sym}" data-side="buy">Long</button><button class="mini-btn btn-sell" data-sym="${u.sym}" data-side="sell">Short</button></td></tr>`;
+    }).join('');
+  });
+  if(!anyMatch){ el.innerHTML = `<div class="empty-state">No contracts match "${fnoSearchQuery}". Try a different symbol or name.</div>`; return; }
+  el.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Contract</th><th>Spot</th><th>Futures LTP</th><th>Lot Size</th><th>Margin/Lot</th><th>Expiry</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+  el.querySelectorAll('.mini-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const u = FNO_UNDERLYINGS.find(x=>x.sym===btn.dataset.sym);
+      openFnoModal({kind:'FUT', underlying:u.sym, lotSize:u.lotSize, label:u.sym+' FUTURES'}, btn.dataset.side);
+    });
+  });
+}
+function renderOptionsChainUI(){
+  const el = document.getElementById('fnoSubContent'); if(!el) return;
+  const cfg = FNO_UNDERLYINGS.find(u=>u.sym===fnoSelectedUnderlying);
+  const spot = getSpot(fnoSelectedUnderlying);
+  const atm = Math.round(spot/cfg.strikeStep)*cfg.strikeStep;
+  const chain = getOptionChain(fnoSelectedUnderlying);
+  const optGroup = kind => FNO_UNDERLYINGS.filter(u=>u.kind===kind).map(u=>`<option value="${u.sym}" ${u.sym===fnoSelectedUnderlying?'selected':''}>${u.sym}</option>`).join('');
+  el.innerHTML = `
+    <div class="grid-summary" style="margin-bottom:16px;">
+      <div class="stat-card"><div class="lbl">Underlying</div><div class="val"><select id="fnoUnderlyingSelect" style="width:100%; background:var(--panel-alt); color:var(--text-bright); border:1px solid var(--border); font-family:'IBM Plex Mono',monospace; padding:5px; font-size:14px;">
+        <optgroup label="Indices">${optGroup('INDEX')}</optgroup>
+        <optgroup label="Stock F&amp;O">${optGroup('STOCK')}</optgroup>
+        <optgroup label="Commodities">${optGroup('COMMODITY')}</optgroup>
+      </select></div></div>
+      <div class="stat-card"><div class="lbl">Spot</div><div class="val">${inr(spot)}</div></div>
+      <div class="stat-card"><div class="lbl">Lot Size</div><div class="val">${cfg.lotSize}</div></div>
+      <div class="stat-card"><div class="lbl">Days to Expiry</div><div class="val">${daysToExpiry()}d</div></div>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>Call (CE)</th><th style="text-align:center;">Strike</th><th>Put (PE)</th></tr></thead>
+    <tbody>${chain.map(row=>{
+      const isAtm = row.strike===atm;
+      return `<tr style="${isAtm?'background:rgba(212,169,63,0.06);':''}">
+        <td><div class="mono" style="margin-bottom:6px;">${inr(row.ce)}</div>
+          <div class="row-actions"><button class="mini-btn btn-buy" data-strike="${row.strike}" data-type="CE" data-side="buy">Buy</button><button class="mini-btn btn-sell" data-strike="${row.strike}" data-type="CE" data-side="sell">Write</button></div></td>
+        <td style="text-align:center; font-weight:700; color:${isAtm?'var(--gold)':'var(--text-bright)'};">${row.strike}${isAtm?' <span style="font-size:9px;color:var(--gold);">ATM</span>':''}</td>
+        <td><div class="mono" style="margin-bottom:6px;">${inr(row.pe)}</div>
+          <div class="row-actions"><button class="mini-btn btn-buy" data-strike="${row.strike}" data-type="PE" data-side="buy">Buy</button><button class="mini-btn btn-sell" data-strike="${row.strike}" data-type="PE" data-side="sell">Write</button></div></td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`;
+  document.getElementById('fnoUnderlyingSelect').addEventListener('change', e=>{ fnoSelectedUnderlying=e.target.value; renderOptionsChainUI(); });
+  el.querySelectorAll('.mini-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const strike=parseInt(btn.dataset.strike), optType=btn.dataset.type, side=btn.dataset.side;
+      openFnoModal({kind:'OPT', underlying:fnoSelectedUnderlying, strike, optType, lotSize:cfg.lotSize, label:fnoSelectedUnderlying+' '+strike+' '+optType}, side);
+    });
+  });
+}
+function renderPositionsList(){
+  const el = document.getElementById('fnoSubContent'); if(!el) return;
+  const entries = Object.entries(portfolio.fno.positions);
+  if(entries.length===0){ el.innerHTML = `<div class="empty-state">No open F&amp;O positions. Head to Futures or Options to take a position.</div>`; return; }
+  el.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Instrument</th><th>Side</th><th>Lots</th><th>Avg Price</th><th>LTP</th><th>Margin</th><th>P&amp;L</th><th></th></tr></thead>
+    <tbody>${entries.map(([key,pos])=>{
+      const spot=getSpot(pos.underlying); let curPrice;
+      if(pos.kind==='FUT'){ curPrice=futPrice(spot); }
+      else { const cfg=FNO_UNDERLYINGS.find(u=>u.sym===pos.underlying); curPrice=bsPrice(spot,pos.strike,daysToExpiry()/365,RISK_FREE,cfg.sigma,pos.optType); }
+      const pnl = pos.side==='long' ? (curPrice-pos.avgPrice)*pos.lots*pos.lotSize : (pos.avgPrice-curPrice)*pos.lots*pos.lotSize;
+      const label = pos.kind==='FUT' ? pos.underlying+' FUT' : pos.underlying+' '+pos.strike+' '+pos.optType;
+      const cls = pnl>=0?'up':'dn';
+      return `<tr><td><strong>${label}</strong></td><td class="chg ${pos.side==='long'?'up':'dn'}">${pos.side.toUpperCase()}</td><td>${pos.lots}</td><td>${inr(pos.avgPrice)}</td><td>${inr(curPrice)}</td><td>${inr(pos.margin)}</td>
+        <td class="chg ${cls}">${pnl>=0?'+':''}${inr(pnl)}</td><td><button class="mini-btn btn-sell" data-key="${key}">Square Off</button></td></tr>`;
+    }).join('')}</tbody></table></div>`;
+  el.querySelectorAll('.mini-btn').forEach(btn=> btn.addEventListener('click', ()=> squareOffPosition(btn.dataset.key)));
+}
+
+/* ===================== F&O ORDER MODAL ===================== */
+function openFnoModal(meta, side){
+  pendingFno = {...meta, side};
+  const spot = getSpot(meta.underlying);
+  const cfgSigma = meta.kind==='OPT' ? FNO_UNDERLYINGS.find(u=>u.sym===meta.underlying).sigma : null;
+  const price = meta.kind==='FUT' ? futPrice(spot) : bsPrice(spot, meta.strike, daysToExpiry()/365, RISK_FREE, cfgSigma, meta.optType);
+  document.getElementById('fnoMSym').textContent = meta.label;
+  document.getElementById('fnoMPrice').textContent = (meta.kind==='FUT' ? 'Futures Price ' : 'Premium ') + inr(price);
+  document.getElementById('fnoLotsInput').value = 1;
+  document.getElementById('fnoLotsLabel').textContent = side==='buy' ? (meta.kind==='OPT'?'Lots to Buy':'Lots to Go Long') : (meta.kind==='OPT'?'Lots to Write (Sell)':'Lots to Go Short');
+  document.getElementById('fnoFormErr').style.display='none';
+  updateFnoTotal();
+  const modal = document.getElementById('fnoOrderModal');
+  modal.className = 'modal ' + (side==='buy'?'buy-mode':'sell-mode');
+  const submitBtn = document.getElementById('fnoModalSubmit');
+  submitBtn.className = 'btn ' + (side==='buy'?'btn-buy':'btn-sell');
+  submitBtn.textContent = side==='buy' ? 'Confirm Buy' : 'Confirm Sell';
+  document.getElementById('fnoModalOverlay').classList.add('show');
+}
+function updateFnoTotal(){
+  if(!pendingFno) return;
+  const spot = getSpot(pendingFno.underlying);
+  const cfgSigma = pendingFno.kind==='OPT' ? FNO_UNDERLYINGS.find(u=>u.sym===pendingFno.underlying).sigma : null;
+  const price = pendingFno.kind==='FUT' ? futPrice(spot) : bsPrice(spot, pendingFno.strike, daysToExpiry()/365, RISK_FREE, cfgSigma, pendingFno.optType);
+  const lots = Math.max(0, parseInt(document.getElementById('fnoLotsInput').value)||0);
+  document.getElementById('fnoOrderTotal').textContent = inr(lots*pendingFno.lotSize*price) + ' notional';
+}
+function closeFnoModal(){ document.getElementById('fnoModalOverlay').classList.remove('show'); pendingFno=null; }
+async function submitFnoOrder(){
+  if(!pendingFno) return;
+  const {kind, underlying, strike, optType, lotSize, side} = pendingFno;
+  const lots = parseInt(document.getElementById('fnoLotsInput').value)||0;
+  const errBox = document.getElementById('fnoFormErr');
+  if(lots<=0){ errBox.textContent='Enter lots greater than zero.'; errBox.style.display='block'; return; }
+  const spot = getSpot(underlying);
+  const cfgSigma = kind==='OPT' ? FNO_UNDERLYINGS.find(u=>u.sym===underlying).sigma : null;
+  const price = kind==='FUT' ? futPrice(spot) : bsPrice(spot, strike, daysToExpiry()/365, RISK_FREE, cfgSigma, optType);
+  const key = kind==='FUT' ? underlying+'_FUT' : underlying+'_'+strike+'_'+optType;
+  let pos = portfolio.fno.positions[key];
+  const actionSide = side==='buy' ? 'long' : 'short';
+
+  if(!pos || pos.lots===0){
+    const notional = lots*lotSize*price;
+    let marginDelta=0, cashDelta=0;
+    if(kind==='FUT'){ marginDelta=notional*0.12; cashDelta=-marginDelta; }
+    else if(actionSide==='long'){ cashDelta=-notional; }
+    else { marginDelta=notional*0.15; cashDelta=notional-marginDelta; }
+    const required = Math.max(0,-cashDelta);
+    if(required > portfolio.cash){ errBox.textContent='Insufficient cash. Required: '+inr(required); errBox.style.display='block'; return; }
+    portfolio.cash = Number((portfolio.cash+cashDelta).toFixed(2));
+    portfolio.fno.positions[key] = {kind, underlying, strike:strike||null, optType:optType||null, lotSize, side:actionSide, lots, avgPrice:price, margin:marginDelta};
+  } else if(pos.side===actionSide){
+    const notional = lots*lotSize*price;
+    let marginDelta=0, cashDelta=0;
+    if(kind==='FUT'){ marginDelta=notional*0.12; cashDelta=-marginDelta; }
+    else if(actionSide==='long'){ cashDelta=-notional; }
+    else { marginDelta=notional*0.15; cashDelta=notional-marginDelta; }
+    const required = Math.max(0,-cashDelta);
+    if(required > portfolio.cash){ errBox.textContent='Insufficient cash for this addition.'; errBox.style.display='block'; return; }
+    portfolio.cash = Number((portfolio.cash+cashDelta).toFixed(2));
+    const totalLots = pos.lots+lots;
+    pos.avgPrice = ((pos.avgPrice*pos.lots)+(price*lots))/totalLots;
+    pos.lots = totalLots; pos.margin += marginDelta;
+  } else {
+    if(lots > pos.lots){ errBox.textContent='Only '+pos.lots+' lot(s) open. Use Square Off in Positions to close fully.'; errBox.style.display='block'; return; }
+    const closeFraction = lots/pos.lots;
+    const marginReleased = pos.margin*closeFraction;
+    let cashDelta=0;
+    if(kind==='FUT'){
+      const pnl = pos.side==='long' ? (price-pos.avgPrice)*lots*lotSize : (pos.avgPrice-price)*lots*lotSize;
+      cashDelta = marginReleased+pnl;
+    } else if(pos.side==='long'){ cashDelta = lots*lotSize*price; }
+    else { cashDelta = marginReleased - lots*lotSize*price; }
+    portfolio.cash = Number((portfolio.cash+cashDelta).toFixed(2));
+    pos.margin -= marginReleased; pos.lots -= lots;
+    if(pos.lots<=0) delete portfolio.fno.positions[key];
+  }
+
+  portfolio.fno.transactions.push({time:Date.now(), kind, underlying, strike:strike||null, optType:optType||null, side, lots, price:Number(price.toFixed(2)), spotAtEntry:spot});
+  await savePortfolio(currentRoll, portfolio);
+  closeFnoModal(); refreshTabs();
+}
+async function squareOffPosition(key){
+  const pos = portfolio.fno.positions[key]; if(!pos) return;
+  const spot = getSpot(pos.underlying);
+  const cfg = pos.kind==='OPT' ? FNO_UNDERLYINGS.find(u=>u.sym===pos.underlying) : null;
+  const price = pos.kind==='FUT' ? futPrice(spot) : bsPrice(spot,pos.strike,daysToExpiry()/365,RISK_FREE,cfg.sigma,pos.optType);
+  const lots = pos.lots; const marginReleased = pos.margin;
+  let cashDelta=0;
+  if(pos.kind==='FUT'){
+    const pnl = pos.side==='long' ? (price-pos.avgPrice)*lots*pos.lotSize : (pos.avgPrice-price)*lots*pos.lotSize;
+    cashDelta = marginReleased+pnl;
+  } else if(pos.side==='long'){ cashDelta = lots*pos.lotSize*price; }
+  else { cashDelta = marginReleased - lots*pos.lotSize*price; }
+  portfolio.cash = Number((portfolio.cash+cashDelta).toFixed(2));
+  delete portfolio.fno.positions[key];
+  portfolio.fno.transactions.push({time:Date.now(), kind:pos.kind, underlying:pos.underlying, strike:pos.strike||null, optType:pos.optType||null, side: pos.side==='long'?'sell':'buy', lots, price:Number(price.toFixed(2)), spotAtEntry:spot});
+  await savePortfolio(currentRoll, portfolio);
+  refreshTabs();
+}
+document.getElementById('fnoModalClose').addEventListener('click', closeFnoModal);
+document.getElementById('fnoModalCancel').addEventListener('click', closeFnoModal);
+document.getElementById('fnoModalSubmit').addEventListener('click', submitFnoOrder);
+document.getElementById('fnoLotsInput').addEventListener('input', updateFnoTotal);
+document.getElementById('fnoModalOverlay').addEventListener('click', e=>{ if(e.target.id==='fnoModalOverlay') closeFnoModal(); });
+
+/* ===================== CHART TAB ===================== */
+function renderChartTab(){
+  const allSyms = [...INDICES.map(i=>i.sym), ...COMMODITIES.map(c=>c.sym), ...STOCKS.map(s=>s.sym)];
+  document.getElementById('tabContent').innerHTML = `
+    <div class="section-title">Candlestick Chart &amp; Trade Entries</div>
+    <div class="field" style="max-width:260px;">
+      <label>Instrument</label>
+      <select id="chartSelect">${allSyms.map(s=>`<option value="${s}" ${s===chartSelectedSym?'selected':''}>${s}</option>`).join('')}</select>
+    </div>
+    <div id="ohlcReadout" style="margin-bottom:10px; font-size:12px; color:var(--text-dim);"></div>
+    <div class="table-wrap" style="padding:14px; margin-bottom:20px;"><canvas id="priceCanvas" style="width:100%; height:320px; display:block;"></canvas></div>
+    <div class="section-title" style="font-size:16px;">All Entries — <span id="chartEntrySym">${chartSelectedSym}</span></div>
+    <div class="table-wrap" id="entriesWrap"></div>`;
+  document.getElementById('chartSelect').addEventListener('change', e=>{ chartSelectedSym=e.target.value; refreshChart(); });
+  refreshChart();
+}
+function getEntriesForSymbol(sym){
+  const out = [];
+  portfolio.transactions.filter(t=>t.sym===sym).forEach(t=> out.push({t:t.time, price:t.price, buy:t.side==='buy', qty:t.qty, label:sym+' Equity'}));
+  portfolio.fno.transactions.filter(t=>t.underlying===sym).forEach(t=>{
+    const label = t.kind==='FUT' ? sym+' FUT' : sym+' '+t.strike+' '+t.optType;
+    out.push({t:t.time, price:t.spotAtEntry, buy:t.side==='buy', qty:t.lots, label});
+  });
+  out.sort((a,b)=>a.t-b.t);
+  return out;
+}
+function drawChart(sym){
+  const canvas = document.getElementById('priceCanvas'); if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.clientWidth || 600;
+  const H = canvas.height = 320;
+  ctx.clearRect(0,0,W,H);
+  const candles = candleHistory[sym] || [];
+  if(candles.length < 2){ ctx.fillStyle='#6B7680'; ctx.font='13px IBM Plex Mono, monospace'; ctx.fillText('Gathering candle data…', 16, H/2); return; }
+  const entries = getEntriesForSymbol(sym);
+  let pMin = Math.min(...candles.map(c=>c.l));
+  let pMax = Math.max(...candles.map(c=>c.h));
+  entries.forEach(e=>{ pMin = Math.min(pMin,e.price); pMax = Math.max(pMax,e.price); });
+  const pad = (pMax-pMin)*0.12 || pMax*0.02; pMin -= pad; pMax += pad;
+  const marginL=62, marginR=14, marginT=14, marginB=22;
+  const plotW = W-marginL-marginR, plotH = H-marginT-marginB;
+  const n = candles.length;
+  const slot = plotW/n;
+  const bodyW = Math.max(2, Math.min(14, slot*0.62));
+  const xOf = i => marginL + slot*i + slot/2;
+  const yOf = p => marginT + plotH - ((p-pMin)/((pMax-pMin)||1))*plotH;
+
+  ctx.strokeStyle = '#1F2A33'; ctx.fillStyle = '#6B7680'; ctx.font = '10px IBM Plex Mono, monospace'; ctx.lineWidth = 1;
+  for(let i=0;i<=4;i++){
+    const p = pMin + (pMax-pMin)*i/4; const y = yOf(p);
+    ctx.beginPath(); ctx.moveTo(marginL,y); ctx.lineTo(W-marginR,y); ctx.stroke();
+    ctx.fillText(p.toFixed(p>=1000?0:2), 4, y+3);
+  }
+
+  candles.forEach((c,i)=>{
+    const x = xOf(i);
+    const bullish = c.c >= c.o;
+    const color = bullish ? '#2FBF71' : '#E2564F';
+    ctx.strokeStyle = color; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, yOf(c.h)); ctx.lineTo(x, yOf(c.l)); ctx.stroke();
+    const yO = yOf(c.o), yC = yOf(c.c);
+    const top = Math.min(yO,yC), bh = Math.max(1, Math.abs(yC-yO));
+    ctx.fillStyle = color;
+    ctx.fillRect(x-bodyW/2, top, bodyW, bh);
+  });
+
+  entries.forEach(e=>{
+    let idx = 0, bestDiff = Infinity;
+    candles.forEach((c,i)=>{ const d = Math.abs(c.t-e.t); if(d<bestDiff){ bestDiff=d; idx=i; } });
+    const x = xOf(idx), y = yOf(e.price);
+    ctx.beginPath(); ctx.fillStyle = e.buy ? '#2FBF71' : '#E2564F';
+    if(e.buy){ ctx.moveTo(x-6,y+10); ctx.lineTo(x+6,y+10); ctx.lineTo(x,y-2); }
+    else { ctx.moveTo(x-6,y-10); ctx.lineTo(x+6,y-10); ctx.lineTo(x,y+2); }
+    ctx.closePath(); ctx.fill();
+  });
+
+  if(n>0){
+    ctx.fillStyle = '#6B7680'; ctx.font = '9.5px IBM Plex Mono, monospace';
+    ctx.textAlign='left';
+    ctx.fillText(new Date(candles[0].t).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}), marginL, H-6);
+    ctx.textAlign='right';
+    ctx.fillText(new Date(candles[n-1].t).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}), W-marginR, H-6);
+    ctx.textAlign='left';
+  }
+}
+function renderOhlcReadout(sym){
+  const box = document.getElementById('ohlcReadout'); if(!box) return;
+  const candles = candleHistory[sym] || [];
+  if(candles.length===0){ box.innerHTML=''; return; }
+  const last = candles[candles.length-1];
+  const bullish = last.c >= last.o;
+  box.innerHTML = `
+    <span class="seg-pill">1m Candles</span>
+    <span class="mono" style="margin-left:8px;">O <strong style="color:var(--text-bright);">${inr(last.o)}</strong></span>
+    <span class="mono" style="margin-left:10px;">H <strong style="color:var(--bull);">${inr(last.h)}</strong></span>
+    <span class="mono" style="margin-left:10px;">L <strong style="color:var(--bear);">${inr(last.l)}</strong></span>
+    <span class="mono" style="margin-left:10px;">C <strong style="color:${bullish?'var(--bull)':'var(--bear)'};">${inr(last.c)}</strong></span>`;
+}
+function refreshChart(){
+  drawChart(chartSelectedSym);
+  renderOhlcReadout(chartSelectedSym);
+  const entries = getEntriesForSymbol(chartSelectedSym);
+  const symLabel = document.getElementById('chartEntrySym'); if(symLabel) symLabel.textContent = chartSelectedSym;
+  const wrap = document.getElementById('entriesWrap'); if(!wrap) return;
+  if(entries.length===0){ wrap.innerHTML = `<div class="empty-state">No trade entries yet for ${chartSelectedSym}.</div>`; return; }
+  wrap.innerHTML = `<table><thead><tr><th>Time</th><th>Instrument</th><th>Side</th><th>Qty/Lots</th><th>Price</th></tr></thead>
+    <tbody>${[...entries].reverse().map(e=>`<tr><td>${new Date(e.t).toLocaleString('en-IN')}</td><td>${e.label}</td>
+      <td class="chg ${e.buy?'up':'dn'}">${e.buy?'BUY':'SELL'}</td><td>${e.qty}</td><td>${inr(e.price)}</td></tr>`).join('')}</tbody></table>`;
+}
+
+
+/* ===================== FUNDAMENTAL ANALYSIS ===================== */
+const FUNDAMENTAL_FIELDS = ['Market Cap','P/E','P/B','EPS','ROE','ROCE','Debt/Equity','Revenue Growth','Profit Growth','Dividend Yield'];
+const FUNDAMENTAL_SEED = {
+  TCS:{pe:28.4,pb:14.2,eps:136,roe:52,roce:58,de:0.02,rg:8.2,pg:6.5,dy:1.4},
+  INFY:{pe:24.1,pb:8.2,eps:67,roe:31,roce:37,de:0.10,rg:7.1,pg:9.2,dy:2.1},
+  HDFCBANK:{pe:19.2,pb:2.7,eps:88,roe:16,roce:6.8,de:7.2,rg:14.0,pg:12.4,dy:1.1},
+  ICICIBANK:{pe:18.5,pb:3.0,eps:62,roe:17,roce:6.9,de:6.1,rg:15.3,pg:13.2,dy:0.8},
+  RELIANCE:{pe:25.2,pb:2.6,eps:114,roe:9.7,roce:9.2,de:0.38,rg:9.4,pg:8.0,dy:0.4},
+  ITC:{pe:26.0,pb:8.4,eps:17.7,roe:29,roce:35,de:0.01,rg:8.0,pg:3.5,dy:3.2},
+  SUNPHARMA:{pe:35.5,pb:6.5,eps:50,roe:17,roce:18,de:0.06,rg:12.0,pg:18.0,dy:0.7},
+  MARUTI:{pe:27.5,pb:4.8,eps:405,roe:17,roce:22,de:0.02,rg:13.0,pg:16.0,dy:0.9},
+  BHARTIARTL:{pe:34.0,pb:9.1,eps:47,roe:24,roce:12,de:1.55,rg:14.0,pg:20.0,dy:0.4},
+  LT:{pe:31.0,pb:4.6,eps:118,roe:15,roce:13,de:1.05,rg:15.0,pg:14.0,dy:0.7}
+};
+function hashFund(sym){
+  let h=0; for(let i=0;i<sym.length;i++) h=(h*31+sym.charCodeAt(i))>>>0;
+  const r=n=>(Math.sin(h*n)*10000)%1;
+  return {
+    pe:Number((14+Math.abs(r(1))*28).toFixed(1)),
+    pb:Number((1.2+Math.abs(r(2))*7).toFixed(1)),
+    eps:null, roe:Number((7+Math.abs(r(3))*24).toFixed(1)),
+    roce:Number((8+Math.abs(r(4))*28).toFixed(1)),
+    de:Number((Math.abs(r(5))*2.2).toFixed(2)),
+    rg:Number((2+Math.abs(r(6))*18).toFixed(1)),
+    pg:Number((-5+Math.abs(r(7))*28).toFixed(1)),
+    dy:Number((Math.abs(r(8))*3.5).toFixed(1))
+  };
+}
+function getFundamental(sym){ return FUNDAMENTAL_SEED[sym] || hashFund(sym); }
+function fundamentalScore(f){
+  let score=50;
+  if(f.pe<25) score+=10; else if(f.pe>40) score-=8;
+  if(f.pb<5) score+=8; else if(f.pb>10) score-=6;
+  if(f.roe>15) score+=10; else if(f.roe<8) score-=8;
+  if(f.roce>15) score+=8; else if(f.roce<8) score-=6;
+  if(f.de<1) score+=8; else if(f.de>2) score-=10;
+  if(f.rg>10) score+=5;
+  if(f.pg>10) score+=5; else if(f.pg<0) score-=8;
+  return Math.max(0,Math.min(100,Math.round(score)));
+}
+let fundamentalSearch='';
+function renderFundamentalsTab(){
+  const el=document.getElementById('tabContent');
+  el.innerHTML=`<div class="section-title">Fundamental Analysis <span class="data-badge">Educational model</span></div>
+  <div class="info-card"><h3>What is analysed?</h3>
+  <div class="small-note">P/E, P/B, EPS, ROE, ROCE, debt/equity, revenue growth, profit growth and dividend yield are shown for the stock universe. A small set of anchor figures is included; the rest use clearly labelled model placeholders until a licensed fundamentals feed is connected. Do not treat these values as investment advice.</div></div>
+  <div class="filter-row"><div class="field"><label>Search Stock</label><input id="fundSearch" placeholder="TCS / Infosys / Bank..." value="${fundamentalSearch}"></div>
+  <div class="field"><label>Minimum Score</label><select id="fundScore"><option value="0">All</option><option value="60">60+</option><option value="70">70+</option><option value="80">80+</option></select></div></div>
+  <div class="table-wrap"><table><thead><tr><th>Stock</th><th>Score</th><th>P/E</th><th>P/B</th><th>ROE</th><th>ROCE</th><th>D/E</th><th>Rev G</th><th>Profit G</th><th>View</th></tr></thead><tbody id="fundBody"></tbody></table></div>`;
+  document.getElementById('fundSearch').addEventListener('input',e=>{fundamentalSearch=e.target.value;renderFundamentalTable();});
+  document.getElementById('fundScore').addEventListener('change',renderFundamentalTable);
+  renderFundamentalTable();
+}
+function renderFundamentalTable(){
+  const body=document.getElementById('fundBody'); if(!body)return;
+  const min=Number(document.getElementById('fundScore')?.value||0);
+  const q=fundamentalSearch.toLowerCase();
+  const rows=STOCKS.filter(s=>(!q||s.sym.toLowerCase().includes(q)||s.name.toLowerCase().includes(q))).map(s=>({s,f:getFundamental(s.sym)}))
+    .filter(x=>fundamentalScore(x.f)>=min).sort((a,b)=>fundamentalScore(b.f)-fundamentalScore(a.f));
+  body.innerHTML=rows.map(({s,f})=>{
+    const sc=fundamentalScore(f); const cls=sc>=70?'good':sc<45?'bad':'neutral';
+    return `<tr><td><strong>${s.sym}</strong><div class="name-sub">${s.name}</div></td><td><span class="signal ${cls}">${sc}/100</span></td>
+    <td>${f.pe}</td><td>${f.pb}</td><td>${f.roe}%</td><td>${f.roce}%</td><td>${f.de}</td><td>${f.rg}%</td><td>${f.pg}%</td>
+    <td><button class="mini-btn btn-outline" data-fsym="${s.sym}">Details</button></td></tr>`;
+  }).join('');
+  body.querySelectorAll('[data-fsym]').forEach(b=>b.addEventListener('click',()=>showFundamentalDetail(b.dataset.fsym)));
+}
+function showFundamentalDetail(sym){
+  const s=STOCKS.find(x=>x.sym===sym), f=getFundamental(sym); if(!s)return;
+  alert(`${s.sym} — Fundamental Snapshot\nScore: ${fundamentalScore(f)}/100\nP/E: ${f.pe}\nP/B: ${f.pb}\nEPS: ${f.eps??'Provider required'}\nROE: ${f.roe}%\nROCE: ${f.roce}%\nDebt/Equity: ${f.de}\nRevenue growth: ${f.rg}%\nProfit growth: ${f.pg}%\nDividend yield: ${f.dy}%`);
+}
+
+/* ===================== MUTUAL FUNDS / AMFI NAV ===================== */
+const MF_SCHEMES=[
+  ['HDFC Top 100 Fund','Equity • Large Cap','HDFC MF'],
+  ['SBI Bluechip Fund','Equity • Large Cap','SBI MF'],
+  ['ICICI Prudential Bluechip Fund','Equity • Large Cap','ICICI Prudential MF'],
+  ['Mirae Asset Large & Midcap Fund','Equity • Large & Mid Cap','Mirae Asset MF'],
+  ['Parag Parikh Flexi Cap Fund','Equity • Flexi Cap','PPFAS MF'],
+  ['HDFC Flexi Cap Fund','Equity • Flexi Cap','HDFC MF'],
+  ['SBI Small Cap Fund','Equity • Small Cap','SBI MF'],
+  ['Nippon India Small Cap Fund','Equity • Small Cap','Nippon India MF'],
+  ['Quant Small Cap Fund','Equity • Small Cap','Quant MF'],
+  ['HDFC Balanced Advantage Fund','Hybrid • Dynamic Asset Allocation','HDFC MF'],
+  ['ICICI Prudential Equity & Debt Fund','Hybrid • Aggressive','ICICI Prudential MF'],
+  ['SBI Liquid Fund','Debt • Liquid','SBI MF']
+];
+let mfRows=[], mfLoadedAt=null, mfStatus='Not loaded';
+function renderMutualFundsTab(){
+  const el=document.getElementById('tabContent');
+  el.innerHTML=`<div class="section-title">Mutual Funds <span class="data-badge">AMFI NAV</span></div>
+  <div class="info-card"><h3>Scheme Explorer</h3><div class="small-note">NAV is an end-of-day mutual-fund value, not a live stock price. The app can load the latest AMFI NAV report. Historical NAV can be added later from the same AMFI source.</div>
+  <div class="source-links"><a href="https://www.amfiindia.com/net-asset-value/nav-download" target="_blank" rel="noopener">AMFI NAV Download</a><a href="https://www.amfiindia.com/net-asset-value/nav-history" target="_blank" rel="noopener">AMFI NAV History</a></div></div>
+  <div class="filter-row"><button class="btn" id="loadMf" style="max-width:220px">Load Latest AMFI NAV</button>
+  <div class="field"><label>Search Scheme</label><input id="mfSearch" placeholder="scheme / AMC"></div></div>
+  <div id="mfStatus" class="small-note">${mfStatus}${mfLoadedAt?' • '+new Date(mfLoadedAt).toLocaleString('en-IN'):''}</div>
+  <div class="table-wrap"><table><thead><tr><th>Scheme</th><th>Category</th><th>AMC</th><th>Plan / Option</th><th>NAV</th><th>NAV Date</th></tr></thead><tbody id="mfBody"></tbody></table></div>`;
+  document.getElementById('loadMf').addEventListener('click',loadAmfiNav);
+  document.getElementById('mfSearch').addEventListener('input',renderMfTable);
+  renderMfTable();
+}
+function renderMfTable(){
+  const body=document.getElementById('mfBody'); if(!body)return;
+  const q=(document.getElementById('mfSearch')?.value||'').toLowerCase();
+  const rows=(mfRows.length?mfRows:MF_SCHEMES.map(x=>({scheme:x[0],category:x[1],amc:x[2],plan:'—',option:'—',nav:'—',date:'—'})))
+    .filter(x=>!q||`${x.scheme} ${x.category} ${x.amc}`.toLowerCase().includes(q)).slice(0,300);
+  body.innerHTML=rows.map(x=>`<tr><td><strong>${x.scheme}</strong></td><td>${x.category}</td><td>${x.amc}</td><td>${x.plan||"—"} / ${x.option||"—"}</td><td>${x.nav}</td><td>${x.date}</td></tr>`).join('');
+}
+async function loadAmfiNav(){
+  const st=document.getElementById('mfStatus'); if(st)st.textContent='Loading AMFI NAV report…';
+  try{
+    const r=await fetch('/api/amfi/nav',{cache:'no-store'}); if(!r.ok)throw new Error('HTTP '+r.status);
+    const txt=await r.text(); const lines=txt.split(/\r?\n/).map(x=>x.trim()).filter(Boolean); const out=[];
+    let currentCategory='—', currentAmc='—';
+    for(const line of lines){
+      if(line.startsWith('Open Ended Schemes')||line.startsWith('Close Ended Schemes')||line.startsWith('Interval Fund')){ currentCategory=line.replace(/^Open Ended Schemes\s*/,'').replace(/^Close Ended Schemes\s*/,'').replace(/^Interval Fund\s*/,'').replace(/[()]/g,''); continue; }
+      const p=line.split(';');
+      if(!/^\d+;/.test(line)||p.length<8) { if(!line.includes(';') && !line.startsWith('Scheme Code')) currentAmc=line; continue; }
+      const nav=Number(p[6]); if(!Number.isFinite(nav))continue;
+      out.push({scheme:p[3]||'Unknown',category:currentCategory,amc:currentAmc,plan:p[4]||'—',option:p[5]||'—',nav:nav.toFixed(4),date:p[7]||'—'});
+    }
+    if(!out.length)throw new Error('AMFI format not recognised');
+    mfRows=out; mfLoadedAt=Date.now(); mfStatus=`Loaded ${out.length.toLocaleString('en-IN')} NAV records`;
+  }catch(e){ mfStatus='AMFI connection unavailable — showing curated scheme list. '+e.message; }
+  renderMutualFundsTab();
+}
+
+/* ===================== LIVE NSE / BSE CONNECTION ===================== */
+const LIVE_CONFIG={exchange:'NSE',provider:'Vercel Yahoo proxy',interval:15000,connected:false,lastUpdate:null,error:''};
+const LIVE_SYMBOLS=['NIFTY','BANKNIFTY','RELIANCE','TCS','HDFCBANK','ICICIBANK','SBIN','INFY','ITC','HUL','MARUTI','TATAMOTORS','SUNPHARMA','BHARTIARTL','LT','KOTAKBANK','AXISBANK','BAJFINANCE','TATASTEEL','TITAN'];
+function yahooSymbol(sym,exchange){return exchange==='BSE'?sym+'.BO':sym+'.NS';}
+async function fetchLiveQuote(sym,exchange=LIVE_CONFIG.exchange){
+  const ys=yahooSymbol(sym,exchange);
+  const r=await fetch('/api/yahoo/'+encodeURIComponent(ys)+'?range=1d&interval=1m',{cache:'no-store'});
+  if(!r.ok)throw new Error(sym+' HTTP '+r.status);
+  const j=await r.json(); const meta=j.chart?.result?.[0]?.meta;
+  if(!meta)throw new Error(sym+' quote unavailable');
+  return {sym,ltp:Number(meta.regularMarketPrice||meta.chartPreviousClose||0),prevClose:Number(meta.previousClose||meta.chartPreviousClose||0),currency:meta.currency||'INR',time:meta.regularMarketTime?meta.regularMarketTime*1000:Date.now()};
+}
+async function refreshLiveData(){
+  LIVE_CONFIG.error=''; let ok=0;
+  for(const sym of LIVE_SYMBOLS){
+    try{
+      const q=await fetchLiveQuote(sym);
+      const st=STOCKS.find(x=>x.sym===sym); if(st&&q.ltp>0){st.ltp=q.ltp;st.prevClose=q.prevClose||st.prevClose;ok++;}
+      const idx=INDICES.find(x=>x.sym===sym); if(idx&&q.ltp>0){idx.ltp=q.ltp;idx.prevClose=q.prevClose||idx.prevClose;ok++;}
+    }catch(e){ LIVE_CONFIG.error=e.message; }
+  }
+  LIVE_CONFIG.connected=ok>0; LIVE_CONFIG.lastUpdate=Date.now();
+  renderTicker();
+  if(currentRoll){ if(activeTab==='market')renderMarketTable(); if(activeTab==='fundamentals')renderFundamentalTable(); if(activeTab==='live')renderLiveDataTab(); }
+}
+function renderLiveDataTab(){
+  const el=document.getElementById('tabContent');
+  const dot=LIVE_CONFIG.connected?'ok':'';
+  el.innerHTML=`<div class="section-title">Live Indian Market Connection</div>
+  <div class="info-card"><h3><span class="live-dot ${dot}"></span>${LIVE_CONFIG.connected?'Connected':'Waiting for data'} <span class="data-badge">${LIVE_CONFIG.exchange}</span></h3>
+  <div class="metric-grid"><div class="metric"><div class="k">Provider</div><div class="v">Yahoo proxy</div></div><div class="metric"><div class="k">Last update</div><div class="v">${LIVE_CONFIG.lastUpdate?new Date(LIVE_CONFIG.lastUpdate).toLocaleTimeString('en-IN'):'—'}</div></div><div class="metric"><div class="k">Poll interval</div><div class="v">${LIVE_CONFIG.interval/1000}s</div></div><div class="metric"><div class="k">Coverage</div><div class="v">${LIVE_SYMBOLS.length} symbols</div></div></div>
+  <div class="small-note">NSE/BSE exchange-grade real-time feeds normally require licensed market-data access. This build uses a Vercel same-origin proxy to a public market-data provider as a practical fallback. For true exchange real-time/tick-by-tick data, replace the proxy with your licensed NSE/BSE vendor or broker WebSocket/API.</div>
+  <div class="source-links"><a href="https://www.nseindia.com/static/market-data/real-time-data-subscription" target="_blank" rel="noopener">NSE Real-Time Data</a><a href="https://marketdata.bseindia.com/" target="_blank" rel="noopener">BSE Market Data</a></div></div>
+  <div class="filter-row"><div class="field"><label>Exchange</label><select id="liveExchange"><option>NSE</option><option>BSE</option></select></div><button class="btn" id="liveRefresh" style="max-width:220px">Refresh Now</button></div>
+  <div class="table-wrap"><table><thead><tr><th>Symbol</th><th>Last Price</th><th>Prev Close</th><th>Change</th><th>Updated</th></tr></thead><tbody>${LIVE_SYMBOLS.map(sym=>{const s=STOCKS.find(x=>x.sym===sym)||INDICES.find(x=>x.sym===sym);return s?`<tr><td><strong>${sym}</strong></td><td>${inr(s.ltp)}</td><td>${inr(s.prevClose)}</td><td class="chg ${s.ltp>=s.prevClose?'up':'dn'}">${pct(((s.ltp-s.prevClose)/s.prevClose)*100)}</td><td>${LIVE_CONFIG.lastUpdate?new Date(LIVE_CONFIG.lastUpdate).toLocaleTimeString('en-IN'):'—'}</td></tr>`:''}).join('')}</tbody></table></div>`;
+  document.getElementById('liveExchange').value=LIVE_CONFIG.exchange;
+  document.getElementById('liveExchange').addEventListener('change',e=>{LIVE_CONFIG.exchange=e.target.value;LIVE_CONFIG.connected=false;refreshLiveData();});
+  document.getElementById('liveRefresh').addEventListener('click',refreshLiveData);
+}
+setInterval(()=>{if(currentRoll)refreshLiveData();},LIVE_CONFIG.interval);
+
+/* ===================== INIT ===================== */
+seedCandleHistory();
+renderTicker();
+renderLogin();
+refreshLiveData();
+
+/* Guard against the browser's back/forward cache (bfcache) restoring a
+   previously logged-in student's dashboard when a different student on the
+   same shared computer presses Back. Any page restore forces a clean login. */
+window.addEventListener('pageshow', function(e){
+  if(e.persisted){ renderLogin(); }
+});
+window.addEventListener('pagehide', function(){
+  // Ensure no session survives in a way the browser could snapshot/restore.
+  currentRoll = null;
+});
+</script>
+</body>
+</html>
