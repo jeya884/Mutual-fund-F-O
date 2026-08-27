@@ -665,7 +665,7 @@ function renderDashboard(){
       <button class="tab-btn" data-tab="orders">Order History</button>
       <button class="tab-btn" data-tab="fundamentals">Fundamentals</button>
       <button class="tab-btn" data-tab="mutualfunds">Mutual Funds</button>
-      <button class="tab-btn" data-tab="live">Live Data</button>
+      <button class="tab-btn" data-tab="library">Asset Library</button>
     </div>
     <div class="content" id="tabContent"></div>`;
   document.getElementById('logoutBtn').addEventListener('click', ()=> renderLogin());
@@ -683,7 +683,7 @@ function refreshTabs(){
   if(activeTab==='orders') renderOrdersTab();
   if(activeTab==='fundamentals') renderFundamentalsTab();
   if(activeTab==='mutualfunds') renderMutualFundsTab();
-  if(activeTab==='live') renderLiveDataTab();
+  if(activeTab==='library') renderAssetLibraryTab();
 }
 
 /* ===================== SUMMARY STATS ===================== */
@@ -1274,105 +1274,89 @@ function showFundamentalDetail(sym){
 
 /* ===================== MUTUAL FUNDS / AMFI NAV ===================== */
 const MF_SCHEMES=[
-  ['HDFC Top 100 Fund','Equity • Large Cap','HDFC MF'],
-  ['SBI Bluechip Fund','Equity • Large Cap','SBI MF'],
-  ['ICICI Prudential Bluechip Fund','Equity • Large Cap','ICICI Prudential MF'],
-  ['Mirae Asset Large & Midcap Fund','Equity • Large & Mid Cap','Mirae Asset MF'],
-  ['Parag Parikh Flexi Cap Fund','Equity • Flexi Cap','PPFAS MF'],
-  ['HDFC Flexi Cap Fund','Equity • Flexi Cap','HDFC MF'],
-  ['SBI Small Cap Fund','Equity • Small Cap','SBI MF'],
-  ['Nippon India Small Cap Fund','Equity • Small Cap','Nippon India MF'],
-  ['Quant Small Cap Fund','Equity • Small Cap','Quant MF'],
-  ['HDFC Balanced Advantage Fund','Hybrid • Dynamic Asset Allocation','HDFC MF'],
-  ['ICICI Prudential Equity & Debt Fund','Hybrid • Aggressive','ICICI Prudential MF'],
-  ['SBI Liquid Fund','Debt • Liquid','SBI MF']
+  ['HDFC Top 100 Fund','Equity • Large Cap','HDFC MF'],['SBI Bluechip Fund','Equity • Large Cap','SBI MF'],
+  ['ICICI Prudential Bluechip Fund','Equity • Large Cap','ICICI Prudential MF'],['Mirae Asset Large & Midcap Fund','Equity • Large & Mid Cap','Mirae Asset MF'],
+  ['Parag Parikh Flexi Cap Fund','Equity • Flexi Cap','PPFAS MF'],['HDFC Flexi Cap Fund','Equity • Flexi Cap','HDFC MF'],
+  ['SBI Small Cap Fund','Equity • Small Cap','SBI MF'],['Nippon India Small Cap Fund','Equity • Small Cap','Nippon India MF'],
+  ['Quant Small Cap Fund','Equity • Small Cap','Quant MF'],['HDFC Balanced Advantage Fund','Hybrid • Dynamic Asset Allocation','HDFC MF'],
+  ['ICICI Prudential Equity & Debt Fund','Hybrid • Aggressive','ICICI Prudential MF'],['SBI Liquid Fund','Debt • Liquid','SBI MF']
 ];
-let mfRows=[], mfLoadedAt=null, mfStatus='Not loaded';
+let mfRows=[];
 function renderMutualFundsTab(){
   const el=document.getElementById('tabContent');
-  el.innerHTML=`<div class="section-title">Mutual Funds <span class="data-badge">AMFI NAV</span></div>
-  <div class="info-card"><h3>Scheme Explorer</h3><div class="small-note">NAV is an end-of-day mutual-fund value, not a live stock price. The app can load the latest AMFI NAV report. Historical NAV can be added later from the same AMFI source.</div>
-  <div class="source-links"><a href="https://www.amfiindia.com/net-asset-value/nav-download" target="_blank" rel="noopener">AMFI NAV Download</a><a href="https://www.amfiindia.com/net-asset-value/nav-history" target="_blank" rel="noopener">AMFI NAV History</a></div></div>
-  <div class="filter-row"><button class="btn" id="loadMf" style="max-width:220px">Load Latest AMFI NAV</button>
-  <div class="field"><label>Search Scheme</label><input id="mfSearch" placeholder="scheme / AMC"></div></div>
-  <div id="mfStatus" class="small-note">${mfStatus}${mfLoadedAt?' • '+new Date(mfLoadedAt).toLocaleString('en-IN'):''}</div>
-  <div class="table-wrap"><table><thead><tr><th>Scheme</th><th>Category</th><th>AMC</th><th>Plan / Option</th><th>NAV</th><th>NAV Date</th></tr></thead><tbody id="mfBody"></tbody></table></div>`;
-  document.getElementById('loadMf').addEventListener('click',loadAmfiNav);
-  document.getElementById('mfSearch').addEventListener('input',renderMfTable);
-  renderMfTable();
+  el.innerHTML=`<div class="section-title">Mutual Fund Scheme Library <span class="data-badge">CATALOG ONLY</span></div>
+  <div class="info-card"><h3>No live NAV connection</h3><div class="small-note">Live market/NAV connections have been removed. This tab is for scheme-name/catalog browsing only. The catalog can be refreshed manually from a public scheme directory when you choose to add that later.</div></div>
+  <div class="filter-row"><button class="btn" id="loadMfCatalog" style="max-width:240px">Load 1000+ Scheme Catalog</button><div class="field"><label>Search Scheme</label><input id="mfSearch" placeholder="scheme / AMC"></div></div>
+  <div id="mfStatus" class="small-note">Curated schemes loaded: ${MF_SCHEMES.length}. Click Load 1000+ Scheme Catalog to import the public scheme directory.</div>
+  <div class="table-wrap"><table><thead><tr><th>Scheme</th><th>Category</th><th>AMC</th></tr></thead><tbody id="mfBody"></tbody></table></div>`;
+  document.getElementById('loadMfCatalog').addEventListener('click',loadMfCatalog);
+  document.getElementById('mfSearch').addEventListener('input',renderMfTable); renderMfTable();
 }
 function renderMfTable(){
-  const body=document.getElementById('mfBody'); if(!body)return;
-  const q=(document.getElementById('mfSearch')?.value||'').toLowerCase();
-  const rows=(mfRows.length?mfRows:MF_SCHEMES.map(x=>({scheme:x[0],category:x[1],amc:x[2],plan:'—',option:'—',nav:'—',date:'—'})))
-    .filter(x=>!q||`${x.scheme} ${x.category} ${x.amc}`.toLowerCase().includes(q)).slice(0,300);
-  body.innerHTML=rows.map(x=>`<tr><td><strong>${x.scheme}</strong></td><td>${x.category}</td><td>${x.amc}</td><td>${x.plan||"—"} / ${x.option||"—"}</td><td>${x.nav}</td><td>${x.date}</td></tr>`).join('');
+ const body=document.getElementById('mfBody'); if(!body)return;
+ const q=(document.getElementById('mfSearch')?.value||'').toLowerCase();
+ const rows=(mfRows.length?mfRows:MF_SCHEMES.map(x=>({scheme:x[0],category:x[1],amc:x[2]}))).filter(x=>!q||`${x.scheme} ${x.category||''} ${x.amc||''}`.toLowerCase().includes(q)).slice(0,500);
+ body.innerHTML=rows.map(x=>`<tr><td><strong>${x.scheme}</strong></td><td>${x.category||'—'}</td><td>${x.amc||'—'}</td></tr>`).join('');
 }
-async function loadAmfiNav(){
-  const st=document.getElementById('mfStatus'); if(st)st.textContent='Loading AMFI NAV report…';
-  try{
-    const r=await fetch('/api/amfi/nav',{cache:'no-store'}); if(!r.ok)throw new Error('HTTP '+r.status);
-    const txt=await r.text(); const lines=txt.split(/\r?\n/).map(x=>x.trim()).filter(Boolean); const out=[];
-    let currentCategory='—', currentAmc='—';
-    for(const line of lines){
-      if(line.startsWith('Open Ended Schemes')||line.startsWith('Close Ended Schemes')||line.startsWith('Interval Fund')){ currentCategory=line.replace(/^Open Ended Schemes\s*/,'').replace(/^Close Ended Schemes\s*/,'').replace(/^Interval Fund\s*/,'').replace(/[()]/g,''); continue; }
-      const p=line.split(';');
-      if(!/^\d+;/.test(line)||p.length<8) { if(!line.includes(';') && !line.startsWith('Scheme Code')) currentAmc=line; continue; }
-      const nav=Number(p[6]); if(!Number.isFinite(nav))continue;
-      out.push({scheme:p[3]||'Unknown',category:currentCategory,amc:currentAmc,plan:p[4]||'—',option:p[5]||'—',nav:nav.toFixed(4),date:p[7]||'—'});
-    }
-    if(!out.length)throw new Error('AMFI format not recognised');
-    mfRows=out; mfLoadedAt=Date.now(); mfStatus=`Loaded ${out.length.toLocaleString('en-IN')} NAV records`;
-  }catch(e){ mfStatus='AMFI connection unavailable — showing curated scheme list. '+e.message; }
-  renderMutualFundsTab();
+async function loadMfCatalog(){
+ const st=document.getElementById('mfStatus'); if(st)st.textContent='Loading public mutual-fund scheme directory…';
+ try{
+   const r=await fetch('https://api.mfapi.in/mf',{cache:'force-cache'}); if(!r.ok)throw new Error('HTTP '+r.status);
+   const data=await r.json();
+   mfRows=(Array.isArray(data)?data:[]).map(x=>({scheme:x.schemeName||'Unknown',category:'Mutual Fund Scheme',amc:'Directory'}));
+   if(mfRows.length<1000)throw new Error('Directory returned fewer than 1000 schemes');
+   if(st)st.textContent=`Loaded ${mfRows.length.toLocaleString('en-IN')} scheme names. No NAV/price data is used.`;
+   renderMfTable();
+ }catch(e){if(st)st.textContent='Catalog import unavailable — showing the bundled curated schemes. '+e.message; renderMfTable();}
 }
 
-/* ===================== LIVE NSE / BSE CONNECTION ===================== */
-const LIVE_CONFIG={exchange:'NSE',provider:'Vercel Yahoo proxy',interval:15000,connected:false,lastUpdate:null,error:''};
-const LIVE_SYMBOLS=['NIFTY','BANKNIFTY','RELIANCE','TCS','HDFCBANK','ICICIBANK','SBIN','INFY','ITC','HUL','MARUTI','TATAMOTORS','SUNPHARMA','BHARTIARTL','LT','KOTAKBANK','AXISBANK','BAJFINANCE','TATASTEEL','TITAN'];
-function yahooSymbol(sym,exchange){return exchange==='BSE'?sym+'.BO':sym+'.NS';}
-async function fetchLiveQuote(sym,exchange=LIVE_CONFIG.exchange){
-  const ys=yahooSymbol(sym,exchange);
-  const r=await fetch('/api/yahoo/'+encodeURIComponent(ys)+'?range=1d&interval=1m',{cache:'no-store'});
-  if(!r.ok)throw new Error(sym+' HTTP '+r.status);
-  const j=await r.json(); const meta=j.chart?.result?.[0]?.meta;
-  if(!meta)throw new Error(sym+' quote unavailable');
-  return {sym,ltp:Number(meta.regularMarketPrice||meta.chartPreviousClose||0),prevClose:Number(meta.previousClose||meta.chartPreviousClose||0),currency:meta.currency||'INR',time:meta.regularMarketTime?meta.regularMarketTime*1000:Date.now()};
+/* ===================== STATIC ASSET LIBRARY ===================== */
+const COMMODITY_LIBRARY=[
+ ['GOLD','Gold','MCX • Bullion'],['GOLDM','Gold Mini','MCX • Bullion'],['GOLDGUINEA','Gold Guinea','MCX • Bullion'],['GOLDPETAL','Gold Petal','MCX • Bullion'],
+ ['SILVER','Silver','MCX • Bullion'],['SILVERM','Silver Mini','MCX • Bullion'],['SILVERMIC','Silver Micro','MCX • Bullion'],
+ ['ALUMINIUM','Aluminium','MCX • Base Metals'],['ALUMINI','Aluminium Mini','MCX • Base Metals'],['COPPER','Copper','MCX • Base Metals'],['COPPERM','Copper Mini','MCX • Base Metals'],
+ ['LEAD','Lead','MCX • Base Metals'],['LEADMINI','Lead Mini','MCX • Base Metals'],['NICKEL','Nickel','MCX • Base Metals'],['ZINC','Zinc','MCX • Base Metals'],['ZINCMINI','Zinc Mini','MCX • Base Metals'],['STEEL','Steel Rebar','MCX • Base Metals'],
+ ['CRUDEOIL','Crude Oil','MCX • Energy'],['CRUDEOILM','Crude Oil Mini','MCX • Energy'],['NATURALGAS','Natural Gas','MCX • Energy'],['NATGASMINI','Natural Gas Mini','MCX • Energy'],['ELECTRICITY','Electricity','MCX • Energy'],
+ ['CARDAMOM','Cardamom','MCX • Agri'],['COTTON','Cotton','MCX • Agri'],['COTTONSEEDOIL','Cotton Seed Wash Oil','MCX • Agri'],['CPO','Crude Palm Oil','MCX • Agri'],['KAPAS','Kapas','MCX • Agri'],['MENTHAOIL','Mentha Oil','MCX • Agri']
+];
+let stockCatalog=[];
+async function loadStockCatalog(){
+ const st=document.getElementById('libraryStatus'); if(st)st.textContent='Loading 1000+ stock catalog…';
+ try{
+   const r=await fetch('https://raw.githubusercontent.com/Jaimin-shah-1/Stock-Prediction---Streamlit-webapp-/refs/heads/main/EQUITY_L.csv',{cache:'force-cache'});
+   if(!r.ok)throw new Error('HTTP '+r.status);
+   const lines=(await r.text()).split(/\r?\n/).slice(1); const seen=new Set();
+   stockCatalog=lines.map(line=>line.split(',')[0].trim()).filter(x=>x && !seen.has(x) && (seen.add(x),true)).map(sym=>({sym:sym.replace(/\.NS$/,''),name:sym.replace(/\.NS$/,'')}));
+   if(stockCatalog.length<1000)throw new Error('Stock catalog returned fewer than 1000 symbols');
+   if(st)st.textContent=`Loaded ${stockCatalog.length.toLocaleString('en-IN')} stock symbols. No live prices are used.`;
+ }catch(e){
+   stockCatalog=STOCK_SEED.map(x=>({sym:x.sym,name:x.name}));
+   if(st)st.textContent=`Public catalog unavailable; bundled catalog contains ${stockCatalog.length} stocks. ${e.message}`;
+ }
+ renderAssetLibraryTable();
 }
-async function refreshLiveData(){
-  LIVE_CONFIG.error=''; let ok=0;
-  for(const sym of LIVE_SYMBOLS){
-    try{
-      const q=await fetchLiveQuote(sym);
-      const st=STOCKS.find(x=>x.sym===sym); if(st&&q.ltp>0){st.ltp=q.ltp;st.prevClose=q.prevClose||st.prevClose;ok++;}
-      const idx=INDICES.find(x=>x.sym===sym); if(idx&&q.ltp>0){idx.ltp=q.ltp;idx.prevClose=q.prevClose||idx.prevClose;ok++;}
-    }catch(e){ LIVE_CONFIG.error=e.message; }
-  }
-  LIVE_CONFIG.connected=ok>0; LIVE_CONFIG.lastUpdate=Date.now();
-  renderTicker();
-  if(currentRoll){ if(activeTab==='market')renderMarketTable(); if(activeTab==='fundamentals')renderFundamentalTable(); if(activeTab==='live')renderLiveDataTab(); }
+function renderAssetLibraryTab(){
+ const el=document.getElementById('tabContent');
+ el.innerHTML=`<div class="section-title">Indian Asset Library <span class="data-badge">NO LIVE DATA</span></div>
+ <div class="info-card"><h3>Stocks • Commodities • Mutual Funds</h3><div class="small-note">Live quotes, live NSE/BSE polling and live price APIs have been removed. This library is for instrument discovery and paper-trading setup only.</div></div>
+ <div class="grid-summary"><div class="stat-card"><div class="lbl">Stock catalog target</div><div class="val">1,000+</div></div><div class="stat-card"><div class="lbl">Commodity contracts</div><div class="val">${COMMODITY_LIBRARY.length}</div></div><div class="stat-card"><div class="lbl">MF scheme target</div><div class="val">1,000+</div></div></div>
+ <div class="filter-row"><button class="btn" id="loadStocks" style="max-width:240px">Load 1000+ Stocks</button><button class="btn" id="loadFunds" style="max-width:240px">Load 1000+ Mutual Funds</button><div class="field"><label>Search all assets</label><input id="assetSearch" placeholder="symbol / scheme / commodity"></div></div>
+ <div id="libraryStatus" class="small-note">Click a catalog button to load the expanded list. Nothing is continuously refreshed.</div><div class="table-wrap"><table><thead><tr><th>Type</th><th>Symbol / Code</th><th>Name</th><th>Category</th></tr></thead><tbody id="assetBody"></tbody></table></div>`;
+ document.getElementById('loadStocks').addEventListener('click',loadStockCatalog); document.getElementById('loadFunds').addEventListener('click',loadMfCatalog); document.getElementById('assetSearch').addEventListener('input',renderAssetLibraryTable); renderAssetLibraryTable();
 }
-function renderLiveDataTab(){
-  const el=document.getElementById('tabContent');
-  const dot=LIVE_CONFIG.connected?'ok':'';
-  el.innerHTML=`<div class="section-title">Live Indian Market Connection</div>
-  <div class="info-card"><h3><span class="live-dot ${dot}"></span>${LIVE_CONFIG.connected?'Connected':'Waiting for data'} <span class="data-badge">${LIVE_CONFIG.exchange}</span></h3>
-  <div class="metric-grid"><div class="metric"><div class="k">Provider</div><div class="v">Yahoo proxy</div></div><div class="metric"><div class="k">Last update</div><div class="v">${LIVE_CONFIG.lastUpdate?new Date(LIVE_CONFIG.lastUpdate).toLocaleTimeString('en-IN'):'—'}</div></div><div class="metric"><div class="k">Poll interval</div><div class="v">${LIVE_CONFIG.interval/1000}s</div></div><div class="metric"><div class="k">Coverage</div><div class="v">${LIVE_SYMBOLS.length} symbols</div></div></div>
-  <div class="small-note">NSE/BSE exchange-grade real-time feeds normally require licensed market-data access. This build uses a Vercel same-origin proxy to a public market-data provider as a practical fallback. For true exchange real-time/tick-by-tick data, replace the proxy with your licensed NSE/BSE vendor or broker WebSocket/API.</div>
-  <div class="source-links"><a href="https://www.nseindia.com/static/market-data/real-time-data-subscription" target="_blank" rel="noopener">NSE Real-Time Data</a><a href="https://marketdata.bseindia.com/" target="_blank" rel="noopener">BSE Market Data</a></div></div>
-  <div class="filter-row"><div class="field"><label>Exchange</label><select id="liveExchange"><option>NSE</option><option>BSE</option></select></div><button class="btn" id="liveRefresh" style="max-width:220px">Refresh Now</button></div>
-  <div class="table-wrap"><table><thead><tr><th>Symbol</th><th>Last Price</th><th>Prev Close</th><th>Change</th><th>Updated</th></tr></thead><tbody>${LIVE_SYMBOLS.map(sym=>{const s=STOCKS.find(x=>x.sym===sym)||INDICES.find(x=>x.sym===sym);return s?`<tr><td><strong>${sym}</strong></td><td>${inr(s.ltp)}</td><td>${inr(s.prevClose)}</td><td class="chg ${s.ltp>=s.prevClose?'up':'dn'}">${pct(((s.ltp-s.prevClose)/s.prevClose)*100)}</td><td>${LIVE_CONFIG.lastUpdate?new Date(LIVE_CONFIG.lastUpdate).toLocaleTimeString('en-IN'):'—'}</td></tr>`:''}).join('')}</tbody></table></div>`;
-  document.getElementById('liveExchange').value=LIVE_CONFIG.exchange;
-  document.getElementById('liveExchange').addEventListener('change',e=>{LIVE_CONFIG.exchange=e.target.value;LIVE_CONFIG.connected=false;refreshLiveData();});
-  document.getElementById('liveRefresh').addEventListener('click',refreshLiveData);
+function renderAssetLibraryTable(){
+ const body=document.getElementById('assetBody'); if(!body)return; const q=(document.getElementById('assetSearch')?.value||'').toLowerCase();
+ const stocks=(stockCatalog.length?stockCatalog:STOCK_SEED.map(x=>({sym:x.sym,name:x.name}))).map(x=>({type:'Stock',sym:x.sym,name:x.name,cat:'NSE Equity'}));
+ const comm=COMMODITY_LIBRARY.map(x=>({type:'Commodity',sym:x[0],name:x[1],cat:x[2]}));
+ const funds=(mfRows.length?mfRows:MF_SCHEMES.map(x=>({scheme:x[0],category:x[1],amc:x[2]}))).map(x=>({type:'Mutual Fund',sym:'—',name:x.scheme,cat:x.amc||x.category}));
+ const all=[...stocks,...comm,...funds].filter(x=>!q||`${x.type} ${x.sym} ${x.name} ${x.cat}`.toLowerCase().includes(q)).slice(0,500);
+ body.innerHTML=all.map(x=>`<tr><td>${x.type}</td><td><strong>${x.sym}</strong></td><td>${x.name}</td><td>${x.cat}</td></tr>`).join('');
 }
-setInterval(()=>{if(currentRoll)refreshLiveData();},LIVE_CONFIG.interval);
 
 /* ===================== INIT ===================== */
 seedCandleHistory();
 renderTicker();
 renderLogin();
-refreshLiveData();
 
 /* Guard against the browser's back/forward cache (bfcache) restoring a
    previously logged-in student's dashboard when a different student on the
@@ -1386,56 +1370,5 @@ window.addEventListener('pagehide', function(){
 });
 </script>
 
-<!-- Embedded live-market API integration. The server-side implementations are kept below for reference;
-     the browser calls the Vercel /api/nse-list and /api/quotes endpoints. -->
-<script id="embedded-nse-list-code" type="text/plain">
-// api/nse-list.js
-// Vercel serverless function: fetches an NSE equity/security list.
-export default async function handler(req, res) {
-  try {
-    const url = "https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%20500";
-    const r = await fetch(url, { headers: { "User-Agent":"Mozilla/5.0", "Accept":"application/json,text/plain,*/*", "Accept-Language":"en-IN,en;q=0.9" } });
-    if (!r.ok) throw new Error(`NSE returned HTTP ${r.status}`);
-    const data = await r.json();
-    const stocks = (data.data || []).map(x => ({ symbol:x.symbol, companyName:x.meta?.companyName || x.symbol, isin:x.meta?.isin || "", exchange:"NSE" }));
-    res.setHeader("Cache-Control","s-maxage=300, stale-while-revalidate=600");
-    return res.status(200).json({ source:"NSE", count:stocks.length, stocks });
-  } catch (err) {
-    return res.status(502).json({ error:"Unable to retrieve NSE stock list", message:err.message });
-  }
-}
-
-</script>
-<script id="embedded-quotes-code" type="text/plain">
-// api/quotes.js
-// Live quote provider endpoint. Configure a licensed NSE/BSE provider here.
-export default async function handler(req, res) {
-  const symbols = String(req.query.symbols || "").split(",").map(s=>s.trim().toUpperCase()).filter(Boolean).slice(0,100);
-  if (!symbols.length) return res.status(400).json({error:"Provide symbols, e.g. ?symbols=RELIANCE,TCS,INFY"});
-  return res.status(503).json({
-    error:"LIVE_QUOTES_NOT_CONFIGURED",
-    message:"Connect a licensed NSE/BSE real-time market-data provider to enable live quotes. No fake prices are returned.",
-    symbols,
-    timestamp:new Date().toISOString()
-  });
-}
-
-</script>
-<script>
-/* Client bridge for the embedded API modules. */
-window.LiveMarketAPI = {
-  async getNSEStocks(){
-    const r=await fetch('/api/nse-list');
-    if(!r.ok) throw new Error('NSE stock list unavailable');
-    return r.json();
-  },
-  async getQuotes(symbols){
-    const q=Array.isArray(symbols)?symbols.join(','):String(symbols||'');
-    const r=await fetch('/api/quotes?symbols='+encodeURIComponent(q));
-    if(!r.ok) throw new Error('Live quotes unavailable');
-    return r.json();
-  }
-};
-</script>
 </body>
 </html>
