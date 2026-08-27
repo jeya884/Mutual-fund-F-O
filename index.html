@@ -1385,5 +1385,57 @@ window.addEventListener('pagehide', function(){
   currentRoll = null;
 });
 </script>
+
+<!-- Embedded live-market API integration. The server-side implementations are kept below for reference;
+     the browser calls the Vercel /api/nse-list and /api/quotes endpoints. -->
+<script id="embedded-nse-list-code" type="text/plain">
+// api/nse-list.js
+// Vercel serverless function: fetches an NSE equity/security list.
+export default async function handler(req, res) {
+  try {
+    const url = "https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%20500";
+    const r = await fetch(url, { headers: { "User-Agent":"Mozilla/5.0", "Accept":"application/json,text/plain,*/*", "Accept-Language":"en-IN,en;q=0.9" } });
+    if (!r.ok) throw new Error(`NSE returned HTTP ${r.status}`);
+    const data = await r.json();
+    const stocks = (data.data || []).map(x => ({ symbol:x.symbol, companyName:x.meta?.companyName || x.symbol, isin:x.meta?.isin || "", exchange:"NSE" }));
+    res.setHeader("Cache-Control","s-maxage=300, stale-while-revalidate=600");
+    return res.status(200).json({ source:"NSE", count:stocks.length, stocks });
+  } catch (err) {
+    return res.status(502).json({ error:"Unable to retrieve NSE stock list", message:err.message });
+  }
+}
+
+</script>
+<script id="embedded-quotes-code" type="text/plain">
+// api/quotes.js
+// Live quote provider endpoint. Configure a licensed NSE/BSE provider here.
+export default async function handler(req, res) {
+  const symbols = String(req.query.symbols || "").split(",").map(s=>s.trim().toUpperCase()).filter(Boolean).slice(0,100);
+  if (!symbols.length) return res.status(400).json({error:"Provide symbols, e.g. ?symbols=RELIANCE,TCS,INFY"});
+  return res.status(503).json({
+    error:"LIVE_QUOTES_NOT_CONFIGURED",
+    message:"Connect a licensed NSE/BSE real-time market-data provider to enable live quotes. No fake prices are returned.",
+    symbols,
+    timestamp:new Date().toISOString()
+  });
+}
+
+</script>
+<script>
+/* Client bridge for the embedded API modules. */
+window.LiveMarketAPI = {
+  async getNSEStocks(){
+    const r=await fetch('/api/nse-list');
+    if(!r.ok) throw new Error('NSE stock list unavailable');
+    return r.json();
+  },
+  async getQuotes(symbols){
+    const q=Array.isArray(symbols)?symbols.join(','):String(symbols||'');
+    const r=await fetch('/api/quotes?symbols='+encodeURIComponent(q));
+    if(!r.ok) throw new Error('Live quotes unavailable');
+    return r.json();
+  }
+};
+</script>
 </body>
 </html>
